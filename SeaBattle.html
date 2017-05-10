@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SeaBattle</title>
+
+    <style>
+
+    </style>
+
+</head>
+<body>
+
+    <div class = "">
+        <table>
+            <tbody id = "fieldPeople">
+
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        var tbodyPeople = document.getElementById("fieldPeople");
+        var arrayFieldPeople = generateArray();
+
+        "use strict"
+        function generateArray(){
+            let state = [];
+            for (let i=0; i<10; i++) {
+                state[i]=[];
+                state[i].push({
+                    x: 10,
+                    y: 9
+                })
+            };
+            return state;
+        };
+
+        console.log(arrayFieldPeople[2]);
+
+        function paintField(){
+            tbodyPeople.innerHTML = arrayFieldPeople.map( function (row, rowId){
+                    return '<tr><td class="cell-'+row+'">' + row +'-'+rowId + '</td></tr>';
+                }).join('');
+        };
+
+        paintField();
+
+    </script>
+
+
+</body>
+</html>
