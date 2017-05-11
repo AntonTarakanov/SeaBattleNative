@@ -23,29 +23,34 @@
         var tbodyPeople = document.getElementById("fieldPeople");
         var arrayFieldPeople = generateArray();
 
-        "use strict"
+        "use strict";
         function generateArray(){
             let state = [];
             for (let i=0; i<10; i++) {
-                state[i]=[];
-                state[i].push({
-                    x: 10,
-                    y: 9
-                })
+                state[i] = [];
+                for (let j=0; j<10; j++) {
+                    state[i].push({      //add end
+                        value: 'empty',
+                        x: j,
+                        y: i
+                    })
+                }
             };
             return state;
         };
 
-        console.log(arrayFieldPeople[2]);
+        function paintField(){ //replace in paintField arguments;
 
-        function paintField(){
             tbodyPeople.innerHTML = arrayFieldPeople.map( function (row, rowId){
-                    return '<tr><td class="cell-'+row+'">' + row +'-'+rowId + '</td></tr>';
+                    return '<tr>' + row.map( function (cell ,cellId){
+                        return '<td id="cell-'+rowId+':'+cellId  + '" >text</td>'   // id = x:y; event; class = value
+                    }).join('') + '</tr>';
                 }).join('');
+
         };
 
         paintField();
-		//q
+
     </script>
 
 
