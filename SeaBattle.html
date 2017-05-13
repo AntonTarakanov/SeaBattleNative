@@ -5,6 +5,26 @@
     <title>SeaBattle</title>
 
     <style>
+        .cell {
+            width: 35px;
+            height: 35px;
+            background: grey;
+            text-align: center;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .cellValue-empty {
+
+            width: 35px;
+            height: 35px;
+        }
+
+        .cellValue-ship {
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 512 512'> <path d='M448 0h-384c-35.2 0-64 28.8-64 64v384c0 35.2 28.8 64 64 64h384c35.2 0 64-28.8 64-64v-384c0-35.2-28.8-64-64-64zM448 448h-384v-384h384v384z'> </path> </svg>");
+            width: 35px;
+            height: 35px;
+        }
 
     </style>
 
@@ -22,6 +42,7 @@
     <script>
         var tbodyPeople = document.getElementById("fieldPeople");
         var arrayFieldPeople = generateArray();
+        var optionBattle = { };
 
         "use strict";
         function generateArray(){
@@ -39,11 +60,46 @@
             return state;
         };
 
+        function Ship (nameShip, size){
+            var allCount = 20;
+            this.nameShip = nameShip;
+            this.size = size;
+            this.nowSize = size;
+            this.calcSize = function () {
+                this.nowSize -= 1;
+                return this.nowSize;
+            };
+        };
+
+        //Ship.countAll = function (){
+        //   this.allCount -= 1;
+        //  return this.allCount;
+        //};
+
+        var shipOne = new Ship('OnePaluba', 4);
+
+        shipOne.calcSize();
+        console.log(Ship.allCount);
+        console.log(shipOne.allCount + ' : ' + shipOne.nowSize);
+        shipOne.calcSize();
+        console.log(shipOne.allCount + ' : ' + shipOne.nowSize);
+
+        //-----------------------------------------
+        function createObj () {
+
+        };
+
+        function createShip (){
+
+        };
+
+
+
         function paintField(){ //replace in paintField arguments;
 
             tbodyPeople.innerHTML = arrayFieldPeople.map( function (row, rowId){
                     return '<tr>' + row.map( function (cell ,cellId){
-                        return '<td id="cell-'+rowId+':'+cellId  + '" >text</td>'   // id = x:y; event; class = value
+                        return '<td '+'id="cell-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+cell.value+'"' +'>'+rowId+':'+cellId+'</td>'
                     }).join('') + '</tr>';
                 }).join('');
 
@@ -52,7 +108,6 @@
         paintField();
 
     </script>
-
 
 </body>
 </html>
