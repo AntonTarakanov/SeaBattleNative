@@ -58,5 +58,7 @@ function lineDataShow(x, y, id) {
     console.log ("LineDataShow = " + cell.dataset.shipId);
 };
 
+//commit for gethub;
+
 paintField();
 lineDataShow(0, 0, 'cell-');
