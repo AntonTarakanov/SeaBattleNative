@@ -1,24 +1,467 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>SeaBattle</title>
+	<title></title>
+	<style type="text/css">
 
-    <link rel="stylesheet" type="text/css" href="./style.css">
+		.cell {
+			width: 15px;
+		    height: 15px;
+		    cursor: pointer;
+		}
 
+		.cell-0 {		    
+		    background: #a2a2ff;
+		}
 
+		.cell-1{
+		    background: red;
+		}
+
+		.cell-2{
+		    background: #F08080;		   
+		}
+		
+		.cell-3{
+		    background: green;		   
+		}
+		
+		.cell-4{
+		    background: yellow;		   
+		}
+		
+		.cell-5{
+		    background: black;		   
+		}
+		
+		.course{
+			position: absolute;
+			
+		}
+		
+		.fieldPlay{
+			position: absolute;
+			left: 10%;
+			top: 1%;
+		}
+		
+		.fieldOpponent{
+			position: absolute;
+			left: 10%;
+			top: 40%;
+		}
+		
+	</style>
+
+<!--	<script
+ // src="https://code.jquery.com/jquery-3.1.1.js"
+ // integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA="
+ // crossorigin="anonymous"></script> -->
+  
 </head>
-<body data-ship-id='{"id": 123, "color": "red"}'>
+<body bgcolor="#696969">
+</button>
+	<div class="course">
+		<input type="button" style="width:80px;height:190px" onclick="" value="Моё поле"/><br><br><br><br><br><br>
+		<input type="button" style="width:80px;height:190px" onclick="" value="Поле компа"/><br><br>
+		<input type="button" style="width:80px;height:190px" onclick="randomShot()" value="Случайный выстрел"/>
+	</div>
+	
+	<div class="fieldPlay">
+		<table>
+			<tbody id="field-1Play">
 
-    <div class = "" id="example" data-ex="work">
-        <table>
-            <tbody id = "fieldPeople">
+			</tbody>
+		</table>	
+	</div>	
+	
+	<div class="fieldOpponent">
+		<table>
+			<tbody id="field-1Opponent">
 
-            </tbody>
-        </table>
-    </div>
+			</tbody>
+		</table>	
+	</div>	
+	
+	<script type="text/javascript">
+		var tbodyPlay = document.getElementById('field-1Play');
+		var tbodyOpponent = document.getElementById('field-1Opponent');
+		var statePlay = generateField();
+		var stateOpponent = generateField();
+		var shipSize = [
+			{
+				name: "PlayShip",
+				size: 20
+			},
+			{
+				name: "PlayOpponent",
+				size: 20
+			}
+		];
 
-<script type="text/javascript" src="./script.js"></script>
+		var CELL_TYPE = {
+			empty: 0,
+			ship: 1,
+			reserved: 2,
+			shot: 3,
+			hit: 4,
+			kill: 5
+		};
+		
+		var ship = [
+			{
+				name: "4-palub",
+				size: 4,
+				amount: 1
+			},
+			{
+				name: "3-palub",
+				size: 3,
+				amount: 2
+			},
+			{
+				name: "2-palub",
+				size: 2,
+				amount: 3
+			},
+			{
+				name: "1-palub",
+				size: 1,
+				amount: 4
+			}
+		];		
+		
+		function generateField(){
+			var state = [];
+			for (var i = 0; i < 10; i ++){
+				state[i] = [];
+				for (var j = 0; j < 10; j ++){
+					state[i].push({
+						x: j,
+						y: i,
+						value: 0
+					})
+				}
+			};
+			return state;
+		};				
+		
+		function randomShip(state){
+			for (var i=0;i<4;i++){
+				var j = 0;
+				do {
+					var x = randomNumber(0, 9), y = randomNumber(0, 9), direct = randomNumber(0,1);
+						if (inspect(x, y, direct, ship[i].size, state) === true) {
+							j++;
+							putShip(x,y,ship[i].size,direct, state);
+						}
+				} while (j<ship[i].amount);				
+			}
+			return ;
+		};
+		
+		function randomNumber(min, max) {
+			return Math.floor (Math.random () * (max-min+1))+min;
+		}		
+		
+		function inspect(x,y,direct,size, stateArray) {
+			var i;
+			if (direct === 0) { 		//Horizontal
+				if (x+size<10){ 
+					for (i=0;i<size;i++){
+						if (stateArray[y][x+i].value != 0) return false;
+					}
+					return true;
+				} else {
+					return false;
+				}				
+				
+			} else { 				//vertikal
+				if (y+size<10){ 
+					for (var i=0;i<size;i++){
+						if (stateArray[y+i][x].value != 0) return false;
+					}
+					return true;
+				} else {
+					return false;
+				}
+			}
+			
+		};
+		
+		function isInsideBox(x, y){
+			return (x >= 0) && (x < 10) && (y >= 0) && (y < 10);
+		}
+		
+		function setCellValue(x, y, value, stateArray){
+			if (!isInsideBox(x, y)){
+				return;
+			};
+			stateArray[y][x].value = value;
+		};
+		
+		function putShip(x, y, size, direction, stateArray){
+			var maxX = direction === 0
+				? x + size
+				: x + 1;	
+			var maxY = direction === 1
+				? y + size
+				: y + 1;
+			for (var ix = x - 1; ix <= maxX; ix++){
+				for (var iy = y - 1; iy <= maxY; iy++){
+					setCellValue(ix, iy, CELL_TYPE.reserved, stateArray);
+				}
+			}			
+			for (var i = 0; i < size; i++){
+				if (direction === 0){
+					setCellValue(x + i, y, CELL_TYPE.ship, stateArray);
+				} else {
+					setCellValue(x, y + i, CELL_TYPE.ship, stateArray);
+				}				
+			}
+			console.log("putShip");
+		};
+		
+		function updateStatePlay(){		
+			tbodyPlay.innerHTML = statePlay.map( function(row, rowId){
+				return '<tr>'+row.map(function(cell, cellId) { 
+						return '<td id="cellPl-' + rowId + ':' + cellId + '" onclick="(' + rowId + ', ' + cellId + ', 3)" class="cell cell-' + cell.value + '" data-coordinates="' + rowId + ':' + cellId + '"></td>'
+				}).join('')+'</tr>'
+			}).join('');	
+		};	
+		
+		function updateStateOpponent(){		
+			tbodyOpponent.innerHTML = stateOpponent.map( function(row, rowId){
+				return '<tr>'+row.map(function(cell, cellId) { 
+						return '<td id="cellOp-' + rowId + ':' + cellId + '" onclick="playShot(' + rowId + ', ' + cellId + ', 3)" class="cell cell-' +  2 + '" data-coordinates="' + rowId + ':' + cellId + '"></td>'
+				}).join('')+'</tr>'                                                                                                      
+			}).join('');
+		};	
+		
+		
+		function updateCell(x, y, value, field){
+			var cell = document.getElementById(field + [x, y].join(':'));
+			cell.className = 'cell cell-' + value;
+			console.log("updateCell");
+		};
+		
+		function playShot(x, y){ 
+				switch (stateOpponent[x][y].value) {
+					case 0: updateCell(x, y, 3, 'cellOp-');
+							stateOpponent[x][y].value = 3;
+							opponentShot();
+							break;
+					case 1: updateCell(x, y, 4, 'cellOp-');
+							stateOpponent[x][y].value = 4;
+							console.log(inspectDirection(stateOpponent,x,y));
+							//paintRound('cellOp-',x,y,inspectDirection(stateOpponent,x,y));
+							qwerty(1,initialCoordinate(stateOpponent,x,y,inspectDirection(stateOpponent,x,y)),5);
+							//1inspectKillShip (stateOpponent,// x, y, //inspectDirection(stateOpponent,x,y))
+							inspectGame(0);
+							break;
+					case 2: updateCell(x, y, 3, 'cellOp-');
+							stateOpponent[x][y].value = 3;
+							opponentShot();
+							break;
+					case 3: break;
+					case 4: break;
+					default: alert("Обратитесь к разработчику");
+				}
+		};
+		
+		function qwerty(q,[x,y],w){
+			console.log("example - " + q + " - " + w);
+			console.log("x = " + x);
+			console.log("y = " + y);
+		};
 
+		function opponentShot() { 
+			var x = randomNumber(0, 9), y = randomNumber(0, 9);
+			switch (statePlay[x][y].value) {
+				case 0: updateCell(x, y, 3, 'cellPl-');
+						statePlay[x][y].value = 3;
+						break;
+				case 1: updateCell(x, y, 4, 'cellPl-');
+						statePlay[x][y].value = 4;
+						console.log(inspectDirection(statePlay,x,y));
+						paintRound('cellPl-',x,y,inspectDirection(statePlay,x,y));
+						initialCoordinate(statePlay,x,y,inspectDirection(statePlay,x,y));
+						inspectGame(1);
+						opponentShot();
+						break;
+				case 2: updateCell(x, y, 3, 'cellPl-');
+						statePlay[x][y].value = 3;
+						break;
+				case 3: opponentShot();
+						break;
+				case 4: opponentShot();
+						break;
+				default: alert("Обратитесь к разработчику");
+			}
+		}
+		
+		function inspectGame(i){
+			shipSize[i].size=shipSize[i].size-1;
+			if (shipSize[i].size == 0) {
+				alert("Пипец доиграли! - " + i);
+			}
+		}
+		
+		function inspectDirection(state,x,y) {
+			if (y+1<10) {
+				if ((state[x][y+1].value == 1) | (state[x][y+1].value == 4)) {
+					return "Horizontally";
+				}
+			}
+			if (y-1>-1) {
+				if ((state[x][y-1].value == 1) | (state[x][y-1].value == 4)) {
+					return "Horizontally";
+				}
+			}
+			if (x+1<10) {
+				if ((state[x+1][y].value == 1) | (state[x+1][y].value == 4)) {
+					return "Vertically";
+				}
+			}
+			if (x-1>-1) {
+				if ((state[x-1][y].value == 1) | (state[x-1][y].value == 4)) {
+					return "Vertically";
+				}
+			}
+			return "One Deck";
+		};
+		
+		//переписать. Видимо, начальные координаты.
+		function initialCoordinate (state,x,y,direction){
+			var a; var i;
+			if (direction == "Horizontally") {
+				for (i=1; i<4; i++) {
+					if (y-i > -1) {
+						if ((state[x][y-i].value == 2) | (state[x][y-i].value == 3)) {
+							a = y-i+1;
+							console.log("y = " + x + ". x = " + a);
+							return [x, a];
+						}
+					} else {
+						a = y-i+1;
+						console.log("y = " + x + ". x = " + a);
+						return [x, a];
+					}
+				}
+			};
+			if (direction == "Vertically") {
+				for (i=1; i<4; i++) {
+					if (x-i > -1) {
+						if ((state[x-i][y].value == 2) | (state[x-i][y].value == 3)) {
+							a = x-i+1;
+							console.log("y = " + a + ". x = " + y);
+							return [a, y];
+						}
+					} else {
+						a = x-i+1;
+						console.log("y = " + a + ". x = " + y);
+						return [a, y];
+					}
+				}
+			}
+		};
+		
+		/*function initialCoordinate (state,x,y,direction){
+		var a; var i;
+		for (i=1; i<4; i++) {
+			if (direction == "Horizontally") {
+					if (y-i > -1) {
+						if ((state[x][y-i].value == 2) | (state[x][y-i].value == 3)) {
+							a = y-i+1;
+							console.log("y = " + x + ". x = " + a);
+							return [x, a];
+						}
+					} else {
+						a = y-i+1;
+						console.log("y = " + x + ". x = " + a);
+						return [x, a];
+					}
+			};
+			
+			if (direction == "Vertically") {
+					if (x-i > -1) {
+						if ((state[x-i][y].value == 2) | (state[x-i][y].value == 3)) {
+							a = x-i+1;
+							console.log("y = " + a + ". x = " + y);
+							return [a, y];
+						}
+					} else {
+						a = x-i+1;
+						console.log("y = " + a + ". x = " + y);
+						return [a, y];
+					}
+			}
+		}
+		};
+		*/
+		//переписать
+		
+		// переписать полностью
+		function paintRound (field,x,y,direction,quantity){
+			//if ((direction == "Vertically") | (direction == "OneDeck")) {
+			//	for (var i = ; i<quantity;i++) {
+			//		
+			//	}
+			//}
+			
+			if (direction == "One Deck") { //error
+				for (var i = -1; i<2; i++){
+					updateCell(x-1, y+i, 5, field);
+					updateCell(x+1, y+i, 5, field);
+				}
+			updateCell(x, y-1, 5, field);
+			updateCell(x, y+1, 5, field);
+			}
+		}
+		// переписать полностью
+		
+		// переписать
+		function inspectKillShip (state, x, y, direction){
+			for (var i=0; i < 4; i++) {
+				
+				if (direction == "Vertically") {
+					if (x+i<10) {	
+						if (state[x+i][y].value == 1) {
+							return console.log("true");
+						}
+						if ((state[x+i][y].value == 5) |(state[x+i][y].value == 3) |(state[x+i][y].value == 2)) {
+							return console.log("false");
+						}
+					} else {return console.log("false");}
+				}
+				
+				if (direction == "Horizontally") {
+					if (y+i<10) {	
+						if (state[x][y+i].value == 1) {
+							return console.log("true");
+						}
+						if ((state[x][y+i].value == 5) |(state[x][y+i].value == 3) |(state[x][y+i].value == 2)) {
+							return console.log("false");
+						}
+					} else { return console.log("false"); }
+				}
+			
+			return console.log("false");
+			}
+			
+		}; 
+		// переписать
+		
+		function getCoords(elem){
+			console.log("getCoords");
+			return elem.dataset.coordinates.split(':').map(i=>parseInt(i));
+		};
+		
+		randomShip(statePlay);
+		randomShip(stateOpponent);
+		updateStatePlay();
+		updateStateOpponent();
+		
+	</script>
 </body>
 </html>
