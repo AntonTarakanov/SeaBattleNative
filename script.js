@@ -1,6 +1,6 @@
 "use strict";
 var tbodyPeople = document.getElementById("fieldPeople");
-var arrayFieldPeople = createMap();
+var mapPeople = createMap();
 var configBattle = {
     oneCell : [4, 1], //count - size
     twoCell : [3, 2],
@@ -32,7 +32,7 @@ function createMap(){
     for (let i=0; i<10; i++) {
         state[i] = [];
         for (let j=0; j<10; j++) {
-            state[i].push({      //add end
+            state[i].push({      //add to the end
                 value: 'empty',
                 x: j,
                 y: i
@@ -57,62 +57,71 @@ function randomNumber(min, max) { //including min-max
     return Math.floor (Math.random () * (max-min+1))+min;
 };
 
-function modifierCoord(direction){ // 0 = horizontally, 1 = vertically
-    if (direction == 0) {
+function modifierCourse(course){ // 0 = horizontally, 1 = vertically
+    if (course === 0) {
         return "horizontally";
     } else return "vertically";
 };
 
 function installShips() {
     for (let i=0; i<objectsShips.length; i++) {
-        let offer = [randomNumber(0, 10), randomNumber(0, 10), modifierCoord(randomNumber(0, 1))];
-        console.log(offer);
+        let put = false;
+        do {
+            let offer = [randomNumber(0, 10), randomNumber(0, 10), modifierCourse(randomNumber(0, 1)), objectsShips[i]];
+            if ((borderCheck(offer[0],offer[3].size)=== false) || (borderCheck(offer[1],offer[3].size)===false)) {continue;};
+            if (inspectLocation(offer) === false) {continue;};
+            console.log("installShips: "+offer);
+            put = true;
+            putShip(offer);
+        } while (put === false);
     };
 };
 installShips();
 
-function inspectLocation(coordinate) {
-
-    if (coordinate[2] === "horizontally") {
-        /*if (x + size < 10) {
-            for (i = 0; i < size; i++) {
-                if (stateArray[y][x + i].value != 0) return false;
-            }
-            return true;
-        } else {
-            return false;
-        }
-        */
-    };
-
-    if (coordinate[2] === "vertically") {
-      /*  if (y + size < 10) {
-            for (var i = 0; i < size; i++) {
-                if (stateArray[y + i][x].value != 0) return false;
-            }
-            return true;
-        } else {
-            return false;
-        }*/
-    };
-
+function borderCheck (coord, size) {
+    if (coord+size < 10) return true;
+    return false;
 };
 
-//for testing____________
+function inspectLocation(offer) {
+    if (offer[2] === "horizontally") {
+        for (let i = 0; i < offer[3].size; i++) {
+            if (mapPeople[offer[0]][offer[1]+i].value === "ship") return false;
+        }
+        return true;
+    };
+    if (offer[2] === "vertically") {
+        for (let i = 0; i < offer[3].size; i++) {
+            if (mapPeople[offer[0]+i][offer[1]].value === "ship") return false;
+        }
+        return true;
+    };
+};
+
+function putShip(offer) {
+    offer[3].coordinate = [offer[0],offer[1],offer[2]];
+    for (let i=0; i<offer[3].size; i++) {
+        if (offer[2] === "horizontally") {
+            mapPeople[offer[0]][offer[1]+i].value = "ship";
+        };
+        if (offer[2] === "vertically") {
+            mapPeople[offer[0]+i][offer[1]].value = "ship";
+        };
+    }
+};
+
+//for testing_____________________________________________________
 
 //function lineDataShow(x, y, id) {
 //    var cell = document.getElementById(id + [x,y].join(':'));
 //    console.log ("LineDataShow = " + cell.dataset.shipId);
 //}; //lineDataShow(0, 0, 'cell-');
 
-//objectsShips[i].coordinate = [randomNumber(0,10), randomNumber(0,10), randomNumber(1,2),];
-
-
-//for testing___________
+//for testing_____________________________________________________
 
 
 function paintField(){
-    tbodyPeople.innerHTML = arrayFieldPeople.map( function (row, rowId){
+    tbodyPeople.innerHTML = mapPeople.map( function (row, rowId){
         return '<tr>' + row.map( function (cell ,cellId){
                 return '<td '+'id="cell-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+cell.value+'"'+' data-ship-id="'+cellId+'"'+'>'+rowId+':'+cellId+'</td>'
             }).join('') + '</tr>';
