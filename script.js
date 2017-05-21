@@ -1,7 +1,11 @@
 "use strict";
-var tbodyPeople = document.getElementById("fieldPeople");
-var mapPeople = createMap();
-var configBattle = {
+let tbodyPeople = document.getElementById("fieldPeople");
+let tbodyOpponent = document.getElementById("fieldOpponent");
+let mapPeople = createMap();
+let mapOpponent = createMap();
+let shipsPlay = [];
+let shipsOpponent = [];
+let configBattle = {
     oneCell : [4, 1], //count - size
     twoCell : [3, 2],
     threeCell : [2, 3],
@@ -35,99 +39,157 @@ function createMap(){
             state[i].push({      //add to the end
                 value: 'empty',
                 x: j,
-                y: i
+                y: i,
+                countObj: undefined
             })
         }
     };
     return state;
 };
 
-var objectsShips = [];
-function createShip() {
+function createShip(array) {
     for (let key in configBattle) {
         for (let i=0; i<configBattle[key][0] ; i++) {
             let ship = new Ship (key, configBattle[key][1]); //count-size
-            objectsShips.push(ship)
+            array.push(ship);
         };
     };
 };
-createShip();
 
 function randomNumber(min, max) { //including min-max
     return Math.floor (Math.random () * (max-min+1))+min;
 };
 
 function modifierCourse(course){ // 0 = horizontally, 1 = vertically
-    if (course === 0) {
-        return "horizontally";
-    } else return "vertically";
+    if (course === 0) return "horizontally";
+    return "vertically";
 };
 
-function installShips() {
-    for (let i=0; i<objectsShips.length; i++) {
+function isInsideBox(coordinate, size){
+    let coord = coordinate+size;
+    return (coord >= 0) && (coord < 10);
+};
+
+function addMap (x, y, type, count, map){
+    map[x][y].value = type;
+    map[x][y].countObj = count;
+};
+
+//-----------------------------installShips
+function installShips(array, map) {
+    for (let i=0; i<array.length; i++) {
         let put = false;
         do {
-            let offer = [randomNumber(0, 10), randomNumber(0, 10), modifierCourse(randomNumber(0, 1)), objectsShips[i]];
-            if ((borderCheck(offer[0],offer[3].size)=== false) || (borderCheck(offer[1],offer[3].size)===false)) {continue;};
-            if (inspectLocation(offer) === false) {continue;};
-            console.log("installShips: "+offer);
-            put = true;
-            putShip(offer);
+            let offer = [randomNumber(0, 9), randomNumber(0, 9), modifierCourse(randomNumber(0, 1)), array[i], i];
+            if (inspectBorder(offer)) {
+                if (inspectLocation(offer, map)) {
+                    put = putShip(offer, map);
+                };
+            };
         } while (put === false);
     };
 };
-installShips();
 
-function borderCheck (coord, size) {
-    if (coord+size < 10) return true;
-    return false;
-};
-
-function inspectLocation(offer) {
-    if (offer[2] === "horizontally") {
-        for (let i = 0; i < offer[3].size; i++) {
-            if (mapPeople[offer[0]][offer[1]+i].value === "ship") return false;
-        }
-        return true;
-    };
-    if (offer[2] === "vertically") {
-        for (let i = 0; i < offer[3].size; i++) {
-            if (mapPeople[offer[0]+i][offer[1]].value === "ship") return false;
-        }
-        return true;
-    };
-};
-
-function putShip(offer) {
+function putShip(offer, map) {
     offer[3].coordinate = [offer[0],offer[1],offer[2]];
     for (let i=0; i<offer[3].size; i++) {
         if (offer[2] === "horizontally") {
-            mapPeople[offer[0]][offer[1]+i].value = "ship";
+            addMap (offer[0], offer[1]+i, "ship", offer[4], map);
         };
         if (offer[2] === "vertically") {
-            mapPeople[offer[0]+i][offer[1]].value = "ship";
+            addMap (offer[0]+i, offer[1], "ship", offer[4], map);
         };
-    }
+    };
+    installRound(offer, map);
+    return true;
 };
 
-//for testing_____________________________________________________
+function inspectBorder(offer) {
+    if (offer[2] === "horizontally") return isInsideBox(offer[1], offer[3].size);
+    if (offer[2] === "vertically") return isInsideBox(offer[0], offer[3].size);
+};
+
+function inspectLocation(offer,map) {
+    for (let i=0; i<offer[3].size; i++) {
+        if (offer[2] === "horizontally") {
+            if ( map[offer[0]] [offer[1]+i].value != "empty") return false;
+        };
+        if (offer[2] === "vertically") {
+            if ( map[offer[0]+i] [offer[1]].value != "empty") return false;
+        };
+    };
+    return true;
+};
+//-----------------------------installShips
+//-------------------------------------------installRound
+function installRound(offer, map) {
+    if (offer[2] === "horizontally") installRoundHor(offer, map);
+    if (offer[2] === "vertically") installRoundVer(offer, map);
+};
+
+function installRoundHor(offer, map){
+    for (let i=-1; i<offer[3].size+1; i++){
+        if ((isInsideBox(offer[0]-1,0))&&(isInsideBox(offer[1]+i,0))) addMap(offer[0]-1,offer[1]+i,"round",undefined, map);
+        if ((isInsideBox(offer[0]+1,0))&&(isInsideBox(offer[1]+i,0))) addMap(offer[0]+1,offer[1]+i,"round",undefined, map);
+    };
+    if ((isInsideBox(offer[0],0))&&(isInsideBox(offer[1]-1,0))) addMap(offer[0],offer[1]-1,"round",undefined, map);
+    if ((isInsideBox(offer[0],0))&&(isInsideBox(offer[1]+offer[3].size,0))) addMap(offer[0],offer[1]+offer[3].size,"round",undefined, map);
+};
+
+function installRoundVer(offer, map){
+    for (let i=-1; i<offer[3].size+1; i++){
+        if ( (isInsideBox(offer[0]+i,0))&&(isInsideBox(offer[1]-1,0))) addMap(offer[0]+i,offer[1]-1,"round",undefined, map);
+        if ( (isInsideBox(offer[0]+i,0))&&(isInsideBox(offer[1]+1,0))) addMap(offer[0]+i,offer[1]+1,"round",undefined, map);
+    };
+    if ((isInsideBox(offer[0]-1,0))&&(isInsideBox(offer[1],0))) addMap(offer[0]-1,offer[1],"round",undefined, map);
+    if ((isInsideBox(offer[0]+offer[3].size,0))&&(isInsideBox(offer[1],0))) addMap(offer[0]+offer[3].size,offer[1],"round",undefined, map);
+};
+//-------------------------------------------installRound
+
+//-------------------------------------------click and dataset testing
+function hit(x,y){
+    updateCell(x,y,"hit","cell-");
+    console.log("hit - "+x+":"+y);
+};
+
+function updateCell(x, y, value, id){
+    var cell = document.getElementById(id + [x, y].join(':'));
+    cell.className = 'cell cellValue-' + value;
+    console.log("updateCell");
+};
+
+/*let table = document.getElementById('example');
+table.onclick = function(event) {
+    let target = event.target;
+    console.log("target = "+target);
+};
+function hitInPeople(x,y){ // id example oppex*/
+//-------------------------------------------click and dataset testing
+
+//-------------------------------------------paintField
+function paintField(array,field){
+    field.innerHTML = array.map( function (row, rowId){
+        return '<tr>' + row.map( function (cell ,cellId){
+                return '<td '+'id="cell-'+rowId+':'+cellId +'"'+' onclick="hit('+rowId+','+cellId +')" class="cell cellValue-'+cell.value+'"'+' data-ship-id="'+cell.countObj+'"'+'>'+rowId+':'+cellId+'</td>'
+            }).join('') + '</tr>';
+    }).join('');
+};
+//-------------------------------------------paintFields
+
+createShip(shipsPlay);
+installShips(shipsPlay, mapPeople);
+paintField(mapPeople, tbodyPeople);
+
+createShip(shipsOpponent);
+installShips(shipsOpponent, mapOpponent);
+paintField(mapOpponent, tbodyOpponent);
+
+
+//for testing-------------------------------------------------------
 
 //function lineDataShow(x, y, id) {
 //    var cell = document.getElementById(id + [x,y].join(':'));
 //    console.log ("LineDataShow = " + cell.dataset.shipId);
 //}; //lineDataShow(0, 0, 'cell-');
 
-//for testing_____________________________________________________
-
-
-function paintField(){
-    tbodyPeople.innerHTML = mapPeople.map( function (row, rowId){
-        return '<tr>' + row.map( function (cell ,cellId){
-                return '<td '+'id="cell-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+cell.value+'"'+' data-ship-id="'+cellId+'"'+'>'+rowId+':'+cellId+'</td>'
-            }).join('') + '</tr>';
-    }).join('');
-};
-
-
-
-paintField();
+//for testing-------------------------------------------------------
