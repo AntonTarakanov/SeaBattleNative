@@ -5,8 +5,8 @@ let mapPeople = createMap();
 let mapOpponent = createMap();
 let shipsPlay = [];
 let shipsOpponent = [];
-let configBattle = {
-    oneCell : [4, 1], //count - size
+let configBattle = { //count - size
+    oneCell : [4, 1],
     twoCell : [3, 2],
     threeCell : [2, 3],
     fourCell : [1, 4]
@@ -36,7 +36,7 @@ function createMap(){
     for (let i=0; i<10; i++) {
         state[i] = [];
         for (let j=0; j<10; j++) {
-            state[i].push({      //add to the end
+            state[i].push({
                 value: 'empty',
                 x: j,
                 y: i,
@@ -60,7 +60,7 @@ function randomNumber(min, max) { //including min-max
     return Math.floor (Math.random () * (max-min+1))+min;
 };
 
-function modifierCourse(course){ // 0 = horizontally, 1 = vertically
+function modifierCourse(course){
     if (course === 0) return "horizontally";
     return "vertically";
 };
@@ -101,6 +101,7 @@ function putShip(offer, map) {
         };
     };
     installRound(offer, map);
+    exampleArray(offer, map);
     return true;
 };
 
@@ -121,7 +122,9 @@ function inspectLocation(offer,map) {
     return true;
 };
 //-----------------------------installShips
+
 //-------------------------------------------installRound
+
 function installRound(offer, map) {
     if (offer[2] === "horizontally") installRoundHor(offer, map);
     if (offer[2] === "vertically") installRoundVer(offer, map);
@@ -157,15 +160,7 @@ function updateCell(x, y, value, id){
     cell.className = 'cell cellValue-' + value;
     console.log("updateCell");
 };
-
-/*let table = document.getElementById('example');
-table.onclick = function(event) {
-    let target = event.target;
-    console.log("target = "+target);
-};
-function hitInPeople(x,y){ // id example oppex*/
 //-------------------------------------------click and dataset testing
-
 //-------------------------------------------paintField
 function paintField(array,field){
     field.innerHTML = array.map( function (row, rowId){
@@ -183,13 +178,3 @@ paintField(mapPeople, tbodyPeople);
 createShip(shipsOpponent);
 installShips(shipsOpponent, mapOpponent);
 paintField(mapOpponent, tbodyOpponent);
-
-
-//for testing-------------------------------------------------------
-
-//function lineDataShow(x, y, id) {
-//    var cell = document.getElementById(id + [x,y].join(':'));
-//    console.log ("LineDataShow = " + cell.dataset.shipId);
-//}; //lineDataShow(0, 0, 'cell-');
-
-//for testing-------------------------------------------------------
