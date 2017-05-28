@@ -12,6 +12,12 @@ let configBattle = { //count - size
     fourCell : [1, 4]
 };
 
+let allCountShipPl = 20;
+let allCountShipOpp = 20;
+function allCountShipCalc(value){
+    return value-=1;
+};
+
 class Ship {
     constructor(nameShip, size, x, y, direction) {
         this.nameShip = nameShip;
@@ -39,6 +45,7 @@ class Trial {
       this.idShip = idShip;
       this.objShip = objShip;
       this.map = map;
+      this.arrayRound = undefined;
   };
 };
 
@@ -154,13 +161,14 @@ function startRound(trial) {
         };
         arrayRound.push( {x: trial.x-1, y: trial.y},{x: trial.x+trial.objShip.size, y: trial.y} );
     };
-    installRound(arrayRound, trial.map);
+    trial.objShip.arrayRound = arrayRound;
+    installRound(arrayRound, trial.map, "round");
 };
 
-function installRound(array, map) {
+function installRound(array, map, value) {
     for (let key in array) {
         if (isInsideBoxTwo(array[key].x, array[key].y)) {
-            map[array[key].x][array[key].y].value = "round";
+            map[array[key].x][array[key].y].value = value;
         };
     };
 };
@@ -168,7 +176,7 @@ function installRound(array, map) {
 function paintField(array,field){
     field.innerHTML = array.map( function (row, rowId){
         return '<tr>' + row.map( function (cell ,cellId){
-                return '<td '+'id="cellPl-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+cell.value+'"'+' data-ship-id="'+cell.countObj+'"'+'>'+rowId+':'+cellId+'</td>'
+                return '<td '+'id="cellPl-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+cell.value+'"'+' data-ship-id="'+cell.countObj+'"'+' data-cell-id="'+rowId+':'+cellId+'"'+'></td>'
             }).join('') + '</tr>';
     }).join('');
 };
@@ -176,7 +184,7 @@ function paintField(array,field){
 function paintFieldOpponent(array,field){
     field.innerHTML = array.map( function (row, rowId){
         return '<tr>' + row.map( function (cell ,cellId){
-                return '<td '+'id="cellOp-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+"empty"+'"'+' data-ship-id="'+cell.countObj+'"'+'>'+rowId+':'+cellId+'</td>'
+                return '<td '+'id="cellOp-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+cell.value+'"'+' data-ship-id="'+cell.countObj+'"'+' data-cell-id="'+rowId+':'+cellId+'"'+'></td>'
             }).join('') + '</tr>';
     }).join('');
 };
@@ -188,7 +196,7 @@ paintField(mapPeople, tbodyPeople);
 createShip(shipsOpponent);
 installShips(shipsOpponent, mapOpponent);
 paintFieldOpponent(mapOpponent, tbodyOpponent);
-
+//-------------------------------------------------------------------------
 opponent.addEventListener("click", shot);
 //-------------------------------------------------------------------------
 class OptionSS {
@@ -200,14 +208,12 @@ class OptionSS {
         this.resultLast = undefined;
         this.logShot = [];
     };
-
-    /*get status() { return [this.status]; };
-    set status(bool) { this.status = bool; };*/
-
     addLog(dataShot){ this.logShot.push(dataShot); };
 };
+
 let optionSS = new OptionSS(false);
-let arrayState = ["empty","kill","miss"];
+let arrayState = ["kill","miss","hit",]; //ciuda nelsa ctrelat - no shot
+
 class ComputerShotData {
     constructor() {
         this.x = randomNumber(0,9);
@@ -215,79 +221,122 @@ class ComputerShotData {
     };
 };
 
-function getDataset(x,y){
-
-};
-
-function updateCell(x, y, value, id){
-    let cell = document.getElementById(id + [x, y].join(':'));
-  //  cell.className = 'cell cellValue-' + value;
+function updateCell(x, y, value, idField){
+    let cell = document.getElementById(idField + [x, y].join(':'));
+    cell.className = 'cell cellValue-' + value;
 };
 
 function shot(event){
-    let shipId = event.target.dataset.shipId;
-    let idCell = event.target.id;
-    let divId = event.currentTarget.id;
-    console.log("dataSet="+shipId+"|. idCell="+idCell+ "|. divId = "+divId);
+    let coordinate = event.target.dataset.cellId.split(":");
+    coordinate.x = coordinate[0]; coordinate.y = coordinate[1]; coordinate.idShip = event.target.dataset.shipId;
+
+    if (inspectShot(coordinate, mapOpponent)) {
+        shotPeople(coordinate);
+    } else {
+        alert("Ne tupi potcan");
+    };
+};
+
+function shotPeople(data){
+    if (mapOpponent[data.x][data.y].value === "ship") {
+        correctiveMap(data, mapOpponent, "hit");
+        updateCell(data.x, data.y, "hit", "cellOp-");
+        correctiveShip(data.idShip, shipsOpponent);
+        allCountShipOpp = allCountShipCalc(allCountShipOpp);
+        shipAnalysis(data, shipsOpponent, mapOpponent, "cellOp-");
+    } else {
+        correctiveMap(data, mapOpponent, "miss");
+        updateCell(data.x, data.y, "miss", "cellOp-");
+        shotOpponent();
+    };
+};
+
+function correctiveMap (data, array, value){
+    array[data.x][data.y].value = value;
+};
+
+function correctiveShip (idShip, array) {
+    let obj = array[idShip];
+    obj.sizeReduce();
+    console.log("size ship = "+obj.size);
 };
 
 function randomFirstShot (){
-    if (randomNumber(0,1)===1) { shotPeople() }
-    else { shotOpponent() };
-};
-
-function shotPeople(){
-    console.log("your turn. Shoot!");
+    if (randomNumber(0,1)===1) {
+        console.log("people shot");
+    }
+    else {
+        shotOpponent()
+    };
 };
 
 function shotOpponent(){
-    console.log("The first move of the computer!");
     if (optionSS.status === false) randomShot();
     if (optionSS.status === true) smartShot();
+};
+
+function getIdShip (x, y, idField){
+    let cell = document.getElementById(idField + [x, y].join(':'));
+    return cell.dataset.shipId;
 };
 
 function randomShot(){
     let indicator = false;
     do {
         let dataShot = new ComputerShotData();
-            if (inspectShot(dataShot)) {
+            if (inspectShot(dataShot, mapPeople)) {
+                dataShot.idShip = getIdShip(dataShot.x, dataShot.y, "cellPl-");
                 doShot(dataShot);
                 indicator = true;
             };
     } while (indicator === false);
 };
 
-function inspectShot (dataShot) {
+function inspectShot (dataShot, array) {
     for (let key in arrayState){
-        if (mapPeople[dataShot.x][dataShot.y].value === arrayState[key]) return false;
+        if (array[dataShot.x][dataShot.y].value === arrayState[key]) return false;
     };
     return true;
 };
 
 function doShot(dataShot) {
     if (mapPeople[dataShot.x][dataShot.y].value === "ship") {
-        updateCell(dataShot.x, dataShot.y, "hit", "cell-");
-        //changeObjShips ();
+        correctiveMap(dataShot, mapPeople, "hit");
+        updateCell(dataShot.x, dataShot.y, "hit", "cellPl-");
+        correctiveShip(dataShot.idShip, shipsPlay);
+        allCountShipPl = allCountShipCalc(allCountShipPl);
+        shipAnalysis(dataShot, shipsPlay, mapPeople, "cellPl-");
     } else {
-        updateCell(dataShot.x, dataShot.y, "miss", "cell-");
+        updateCell(dataShot.x, dataShot.y, "miss", "cellPl-");
+        correctiveMap(dataShot, mapPeople, "miss");
     };
-    //shipAnalysis();
 };
 
 function smartShot(){
     console.log("smart shot");
 };
 
-function shipAnalysis(){
-    console.log("shipAnalysis");
+function shipAnalysis(data, arrayShips, map, id){
+    if ( (allCountShipPl === 0) || (allCountShipOpp === 0) ) {
+        console.log("Game end. Begin in the snachala");
+        location.reload();
+    };
+    if (arrayShips[data.idShip].size === 0) {
+        console.log("ship is kill");
+        console.log("arrayRound = "+arrayShips[data.idShip].arrayRound[1].x);
+        installRound(arrayShips[data.idShip].arrayRound, map, "kill");
+        let array = arrayShips[data.idShip].arrayRound;
+        for (let key in array){
+            if (isInsideBoxTwo(array[key].x, array[key].y)) {
+                updateCell(array[key].x, array[key].y, "kill", id);
+            };
+        };
+    };
 };
 
 function changeObjShip(){
     console.log("changeObjShip");
 };
-/*function corrective (){
-
-};*/
 
 randomFirstShot();
 
