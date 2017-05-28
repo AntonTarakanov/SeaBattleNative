@@ -1,16 +1,17 @@
 "use strict";
-let tbodyPeople = document.getElementById("fieldPeople");
-let tbodyOpponent = document.getElementById("fieldOpponent");
-let mapPeople = createMap();
-let mapOpponent = createMap();
-let shipsPlay = [];
-let shipsOpponent = [];
 let configBattle = { //count - size
     oneCell : [4, 1],
     twoCell : [3, 2],
     threeCell : [2, 3],
     fourCell : [1, 4]
 };
+
+let tbodyPeople = document.getElementById("fieldPeople");
+let tbodyOpponent = document.getElementById("fieldOpponent");
+let mapPeople = createMap();
+let mapOpponent = createMap();
+let shipsPlay = [];
+let shipsOpponent = [];
 
 let allCountShipPl = 20;
 let allCountShipOpp = 20;
@@ -38,15 +39,15 @@ class Ship {
 };
 
 class Trial {
-  constructor (idShip, objShip, map) {
-      this.x = randomNumber(0,9);
-      this.y = randomNumber(0,9);
-      this.course = modifierCourse(randomNumber(0,1));
-      this.idShip = idShip;
-      this.objShip = objShip;
-      this.map = map;
-      this.arrayRound = undefined;
-  };
+    constructor (idShip, objShip, map) {
+        this.x = randomNumber(0,9);
+        this.y = randomNumber(0,9);
+        this.course = modifierCourse(randomNumber(0,1));
+        this.idShip = idShip;
+        this.objShip = objShip;
+        this.map = map;
+        this.arrayRound = undefined;
+    };
 };
 
 function createMap(){
@@ -96,6 +97,7 @@ function installShips(arrayShips, map) {
             if (inspectBorder(trial)) {
                 if (inspectLocation(trial)) {
                     put = putShip(trial);
+                    startRound(trial);
                 };
             };
         } while (put === false);
@@ -138,7 +140,6 @@ function putShip(trial) {
             addMap (trial, trial.x+i, trial.y, "ship");
         };
     };
-    startRound(trial);
     return true;
 };
 
@@ -184,7 +185,7 @@ function paintField(array,field){
 function paintFieldOpponent(array,field){
     field.innerHTML = array.map( function (row, rowId){
         return '<tr>' + row.map( function (cell ,cellId){
-                return '<td '+'id="cellOp-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+cell.value+'"'+' data-ship-id="'+cell.countObj+'"'+' data-cell-id="'+rowId+':'+cellId+'"'+'></td>'
+                return '<td '+'id="cellOp-'+rowId+':'+cellId +'"'+' class="cell cellValue-'+"empty"+'"'+' data-ship-id="'+cell.countObj+'"'+' data-cell-id="'+rowId+':'+cellId+'"'+'></td>'
             }).join('') + '</tr>';
     }).join('');
 };
@@ -284,11 +285,11 @@ function randomShot(){
     let indicator = false;
     do {
         let dataShot = new ComputerShotData();
-            if (inspectShot(dataShot, mapPeople)) {
-                dataShot.idShip = getIdShip(dataShot.x, dataShot.y, "cellPl-");
-                doShot(dataShot);
-                indicator = true;
-            };
+        if (inspectShot(dataShot, mapPeople)) {
+            dataShot.idShip = getIdShip(dataShot.x, dataShot.y, "cellPl-");
+            doShot(dataShot);
+            indicator = true;
+        };
     } while (indicator === false);
 };
 
@@ -339,4 +340,5 @@ function changeObjShip(){
 };
 
 randomFirstShot();
+
 
