@@ -187,8 +187,8 @@ function paintField(array,field, value){
 function paintFieldOpponent(array,field, value){
     field.innerHTML = array.map( function (row, rowId){
         return '<tr>' + row.map( function (cell ,cellId){
-                return '<td '+'id="'+value+rowId+':'+cellId +'"'+' class="cell cellValue-'+cell.value+'"'+' data-ship-id="'+cell.countObj+'"'+' data-cell-id="'+rowId+':'+cellId+'"'+'></td>'
-            }).join('') + '</tr>';//'empty'
+                return '<td '+'id="'+value+rowId+':'+cellId +'"'+' class="cell cellValue-'+'empty'+'"'+' data-ship-id="'+cell.countObj+'"'+' data-cell-id="'+rowId+':'+cellId+'"'+'></td>'
+            }).join('') + '</tr>';//
     }).join('');
 }
 
