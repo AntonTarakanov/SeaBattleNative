@@ -1,3 +1,32 @@
+#inform {
+    float: left;
+    margin: 10px;
+    clear: left;
+    color: orangered;
+}
+
+#log {
+    float: left;
+    margin: 10px;
+    color: orangered;
+    clear: left;
+}
+
+P {
+    border: 1px solid black;
+    padding: 5px;
+}
+
+#opponent {
+    float: left;
+    margin: 10px;
+}
+
+#people {
+    float: left;
+    margin: 10px;
+}
+
 .cell {
     width: 30px;
     height: 30px;
