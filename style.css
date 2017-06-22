@@ -1,20 +1,32 @@
-#inform {
-    float: left;
-    margin: 10px;
-    clear: left;
-    color: orangered;
+.begin {
+    background: #212A3B;
+    width: 55%;
+    padding: 10px;
+    margin: auto;
+    border: 7px groove;
 }
 
-#log {
-    float: left;
-    margin: 10px;
-    color: orangered;
+table {
+    border: 3px groove;
+}
+
+#inform {
     clear: left;
+    color: green;
+    padding: 10px;
+    width: 95%;
 }
 
 P {
-    border: 1px solid black;
-    padding: 5px;
+    border: 7px groove;
+}
+
+.nameField {
+    border: 7px red groove;
+    color: green;
+    height: 30px;
+    text-align: center;
+    font-size: 25px;
 }
 
 #opponent {
@@ -53,7 +65,6 @@ P {
 }
 
 .cellValue-round {
-    /*background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM16 28c-6.627 0-12-5.373-12-12s5.373-12 12-12c6.627 0 12 5.373 12 12s-5.373 12-12 12z'></path></svg>");*/
     width: 30px;
     height: 30px;
     background-repeat: no-repeat;
