@@ -183,42 +183,23 @@ function installRound(array, map, value) {
 function paintField(array, field, value) {
     field.innerHTML = array.map(function (row, rowId) {
         return '<tr>' + row.map(function (cell, cellId) {
+            let hide = getHide(value, cell.value);
                 return '<td '+
-                    'id="'+
-                    value+rowId+
-                    ':'+cellId+
-                    '"'+' class="cell cellValue-'+
-                    cell.value+//
-                    '"'+' data-ship-id="'+
-                    cell.countObj+
-                    '"'+' data-cell-id="'+
-                    rowId+':'+
-                    cellId+'"'+
+                    'id="'+value+rowId+':'+cellId+
+                    '" class="cell cellValue-'+hide+
+                    '" data-ship-id="'+cell.countObj+'"'+
+                    ' data-cell-id="'+rowId+':'+cellId+'"'+
                     '></td>'
             }).join('')+'</tr>';
     }).join('');
 }
 
-function paintFieldOpponent(array, field, value) {
-    field.innerHTML = array.map(function (row, rowId) {
-        return '<tr>' + row.map(function (cell, cellId) {
-                return '<td '
-                    +'id="'+
-                    value+rowId+
-                    ':'+cellId+
-                    '"'+' class="cell cellValue-'+
-                    'empty'+//
-                    '"'+' data-ship-id="'+
-                    cell.countObj+
-                    '"'+' data-cell-id="'+
-                    rowId+':'+
-                    cellId+'"'+
-                    '></td>'
-            }).join('')+'</tr>';//
-    }).join('');
+function getHide (value, cell){
+    let hide;
+    if (value !== 'cellPl-') hide = "empty";
+    else hide = cell;
+    return hide;
 }
-
-
 
 createShip(shipsPlay);
 installShips(shipsPlay, mapPeople);
@@ -226,4 +207,4 @@ paintField(mapPeople, tbodyPeople, 'cellPl-');
 
 createShip(shipsOpponent);
 installShips(shipsOpponent, mapOpponent);
-paintFieldOpponent(mapOpponent, tbodyOpponent, 'cellOp-');
+paintField(mapOpponent, tbodyOpponent, 'cellOp-');
