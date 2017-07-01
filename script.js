@@ -126,10 +126,10 @@ function isInsideBoxTwo(x, y) {
 function inspectLocation(trial) {
     for (let i = 0; i < trial.objShip.size; i++) {
         if (trial.course === "horizontally") {
-            if (trial.map[trial.x] [trial.y + i].value != "empty") return false;
+            if (trial.map[trial.x] [trial.y + i].value !== "empty") return false;
         }
         if (trial.course === "vertically") {
-            if (trial.map[trial.x + i] [trial.y].value != "empty") return false;
+            if (trial.map[trial.x + i] [trial.y].value !== "empty") return false;
         }
     }
     return true;
@@ -196,8 +196,7 @@ function paintField(array, field, value) {
 
 function getHide (value, cell){
     let hide;
-    if (value !== 'cellPl-') hide = "empty";
-    else hide = cell;
+    hide = value !== 'cellPl-' ? "empty" : cell;
     return hide;
 }
 

@@ -1,4 +1,8 @@
 opponent.addEventListener("click", shot);
+let logOpponent = document.getElementById("log-opponent");
+let logPlay = document.getElementById("log-play");
+let outPlay = document.getElementById("result-play");
+let outOpponent = document.getElementById("result-opponent");
 let banShot = ["kill","miss","hit"];
 class DataShot {
     constructor (idShip, map, idFiled) {
@@ -41,7 +45,7 @@ function shot(event){
     if (inspectShot(dataShot)) {
         doShot(dataShot);
     } else {
-        alert("Do not be stupid boy!");
+        outOpponent.textContent = "Click on the other place";
     }
 }
 
@@ -57,12 +61,11 @@ function inspectShot (dataShot) {
 }
 
 function ifOpponent (idField){
-    if (idField === "cellPl-") { return true; }
-    return false;
+    return idField === "cellPl-";
+
 }
 
 function doShot(dataShot) {
-    if (ifOpponent(dataShot.idField)) {console.log("Coordinate shot = "+dataShot.coord.x+":"+dataShot.coord.y+" - "+dataShot.idField); }
     if (dataShot.mapValue === "ship") {
         updateCell(dataShot.coord.x, dataShot.coord.y, "hit", dataShot.idField);
         correctiveMap(dataShot, "hit");
@@ -81,11 +84,11 @@ function doShot(dataShot) {
 
 function inspectEnd (){
     if (allCountShipPl === 0) {
-        alert("Game end. Begin in the snachala. Opponent win!");
+        alert("The computer won! Game over! The game will be rebooted");
         location.reload();
     }
     if (allCountShipOpp === 0) {
-        alert("Game end. Begin in the snachala. Play win!");
+        alert("The Play won! The game will be rebooted");
         location.reload();
     }
 }
@@ -98,7 +101,7 @@ function identifyArrayShips(data){
 function shipAnalysis(data){
     let arrayShips = identifyArrayShips(data);
     if (arrayShips[data.idShip].size === 0) {
-        alert("ship is kill");
+        outOpponent.textContent = "Ship kill";
         changeSmartOptions(data, false);
         installRound(arrayShips[data.idShip].arrayRound, data.map, "kill");
         let arrayRound = arrayShips[data.idShip].arrayRound;
@@ -118,7 +121,6 @@ function changeSmartOptions (dataShot, logic){
             smartOptions.idShip = dataShot.idShip;
         }
         if (logic === false) {
-            console.log("clean true");
             smartOptions.status = false;
             smartOptions.coord = {};
             smartOptions.idShip = undefined;
@@ -177,7 +179,6 @@ function correctiveMap (data, newValue){
 }
 
 function smartShot(){
-    console.log("smart shot is true");
     smartOptions.course = identifyCourse();
     let dataShot = targetCourse();
     doShot(dataShot);
@@ -205,7 +206,6 @@ function aboutCell (){
 };
 
 function targetCourse () {
-    console.log("target course = "+smartOptions.course);
     if (smartOptions.course === undefined) {
         return getTarget();
     }
@@ -220,7 +220,7 @@ function targetCourse () {
     function getTarget (){
     let array = aboutCell();
     for (let key in array) {
-        console.log("get target = "+array[key].x + ":"+array[key].y);
+        //console.log("get target = "+array[key].x + ":"+array[key].y);
         if (isInsideBoxTwo(array[key].x,array[key].y)) {
             let dataShot = createData(array[key].x, array[key].y);
             if (inspectShot(dataShot)) {
@@ -235,14 +235,14 @@ function horizontallyTarget () {
         if (isInsideBoxTwo(smartOptions.coord.x, smartOptions.coord.y+i)) {
             let dataShot = createData(smartOptions.coord.x, smartOptions.coord.y + i);
             if (inspectShot(dataShot)) {
-                console.log("horizontally target = " + smartOptions.coord.x + ":" + smartOptions.coord.y + i);
+                //console.log("horizontally target = " + smartOptions.coord.x + ":" + smartOptions.coord.y + i);
                 return dataShot;
             }
         }
         if (isInsideBoxTwo(smartOptions.coord.x, smartOptions.coord.y-i)) {
             let dataShot = createData(smartOptions.coord.x, smartOptions.coord.y - i);
             if (inspectShot(dataShot)) {
-                console.log("horizontally target = " + smartOptions.coord.x + ":" + smartOptions.coord.y - i);
+                //console.log("horizontally target = " + smartOptions.coord.x + ":" + smartOptions.coord.y - i);
                 return dataShot;
             }
         }
@@ -254,14 +254,14 @@ function verticallyTarget () {
         if (isInsideBoxTwo(smartOptions.coord.x + i, smartOptions.coord.y)) {
             let dataShot = createData(smartOptions.coord.x + i, smartOptions.coord.y);
             if (inspectShot(dataShot)) {
-                console.log("vertically target = " + smartOptions.coord.x + i + ":" + smartOptions.coord.y);
+                //console.log("vertically target = " + smartOptions.coord.x + i + ":" + smartOptions.coord.y);
                 return dataShot;
             }
         }
         if (isInsideBoxTwo(smartOptions.coord.x - i, smartOptions.coord.y)) {
             let dataShot = createData(smartOptions.coord.x - i, smartOptions.coord.y);
             if (inspectShot(dataShot)) {
-                console.log("vertically target = " + smartOptions.coord.x - i + ":" + smartOptions.coord.y);
+                //console.log("vertically target = " + smartOptions.coord.x - i + ":" + smartOptions.coord.y);
                 return dataShot;
             }
         }
@@ -269,10 +269,10 @@ function verticallyTarget () {
 }
 
 function otherPlay (dataShot){
- if (dataShot.idField === "cellOp-") {
- shotOpponent();
- }
- }
+    if (dataShot.idField === "cellOp-") {
+        shotOpponent();
+    }
+}
 
 function repeatePlay (dataShot){
     if (dataShot.idField === "cellPl-") {
