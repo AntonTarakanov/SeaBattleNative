@@ -6,20 +6,20 @@ let configBattle = { //count - size
     fourCell: [1, 4]
 };
 
-let allCountShipPl = 20;
-let allCountShipOpp = 20;
+let allCountShipPl = 20,
+    allCountShipOpp = 20;
 function allCountShipCalc(dataShot) {
     if (dataShot.idField === "cellOp-") {
         allCountShipOpp--;
     } else allCountShipPl--;
 }
 
-let tbodyPeople = document.getElementById("fieldPeople");
-let tbodyOpponent = document.getElementById("fieldOpponent");
-let mapPeople = createMap();
-let mapOpponent = createMap();
-let shipsPlay = [];
-let shipsOpponent = [];
+let tbodyPeople = document.getElementById("fieldPeople"),
+    tbodyOpponent = document.getElementById("fieldOpponent"),
+    mapPeople = createMap(),
+    mapOpponent = createMap(),
+    shipsPlay = [],
+    shipsOpponent = [];
 
 class Ship {
     constructor(nameShip, size, x, y, direction) {
@@ -29,15 +29,12 @@ class Ship {
         this.y = y;
         this.direction = direction;
     };
-
     get coordinate() {
         return [this.x, this.y, this.direction];
     };
-
     set coordinate(newCoord) {
         [this.x, this.y, this.direction] = newCoord;
     };
-
     sizeReduce() {
         this.size -= 1;
     };

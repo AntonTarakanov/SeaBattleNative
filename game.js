@@ -1,9 +1,10 @@
 opponent.addEventListener("click", shot);
-let logOpponent = document.getElementById("log-opponent");
-let logPlay = document.getElementById("log-play");
-let outPlay = document.getElementById("result-play");
-let outOpponent = document.getElementById("result-opponent");
-let banShot = ["kill","miss","hit"];
+let logOpponent = document.getElementById("log-opponent"),
+    logPlay = document.getElementById("log-play"),
+    outPlay = document.getElementById("result-play"),
+    outOpponent = document.getElementById("result-opponent"),
+    banShot = ["kill","miss","hit"];
+
 class DataShot {
     constructor (idShip, map, idFiled) {
         this.coord = {};
@@ -203,7 +204,7 @@ function aboutCell (){
     array.push({ x: smartOptions.coord.x-1, y: smartOptions.coord.y, course: "vertically" });
     array.push({ x: smartOptions.coord.x+1, y: smartOptions.coord.y, course: "vertically" });
     return array;
-};
+}
 
 function targetCourse () {
     if (smartOptions.course === undefined) {
