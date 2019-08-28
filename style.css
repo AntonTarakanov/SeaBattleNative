@@ -1,97 +1,70 @@
-.fields {
+/* Таблица используемых цветов */
+
+/* #282E33 - светлый фон для тёмной темы */
+/* #272822 - monokai фон */
+/* #18191D - Тёмный фон */
+/* #65AADD - синий цвет */
+/* #F92672 - monokai розовй */
+/* #A6E22E - monokai зелёный */
+/* #F8F8F0 - monokai белый */
+
+body {
+    background: #18191D;
+}
+
+.sb_workplace {
+    height: 100%;
+    width: 100%;
+}
+
+.sb_workplace__smallMarginTop {
+    margin-top: 12px;
+}
+
+.sb_header__wrap {
+    height: 80px;
+    min-width: 770px;
+    background: #282E33;
     display: flex;
-    flex-direction: row;
     justify-content: space-around;
-    align-items: baseline;
-    border: 10px double #d0c39d;
-    background-color: #535362;
-    padding: 10px;
+    align-items: center;
+    font-size: 25px;
+    color: #F8F8F0;
 }
 
-.field {
+.sb_playFiled__wrap {
+    width: 100%;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: stretch;
-    border: 10px double #d0c39d;
-    background-color: chocolate;
-    padding: 10px;
+    justify-content: space-around;
 }
 
-.nameField {
-    border: 3px double #ff6876;
-    background: black;
-    color: white;
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
-    padding: 5px;
-    font-size: 20px;
+.sb_playFiled__cell {
+    min-height: 35px;
+    min-width: 35px;
+    height: 35px;
+    width: 35px;
 }
 
-.info {
-    border: 3px double #ff6876;
-    background: black;
-    color: white;
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 5px;
-    font-size: 20px;
-    margin-top: 20px;
+.sb_playFiled__water {
+    background: #282E33;
 }
 
-.table-field {
-    border: 4px inset #ff6876;
-    background: black;
+.sb_playFiled__ship {
+    background: #F92672;
 }
 
-.cell {
-    width: 30px;
-    height: 30px;
-    background: #a5a790;
-    text-align: center;
-    background-repeat: no-repeat;
-    background-position: center;
+.sb_playFiled__area {
+    background: #282E33;
 }
 
-.cellValue-empty {
-    background-repeat: no-repeat;
-    background-position: center;
+.sb_playFiled__killArea {
+    background: #009687;
 }
 
-.cellValue-ship {
-    background: darkkhaki;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 512 512'> <path d='M448 0h-384c-35.2 0-64 28.8-64 64v384c0 35.2 28.8 64 64 64h384c35.2 0 64-28.8 64-64v-384c0-35.2-28.8-64-64-64zM448 448h-384v-384h384v384z'> </path> </svg>");
-    background-repeat: no-repeat;
-    background-position: center;
+.sb_playFiled__shot {
+    background: #009687;
 }
 
-.cellValue-round {
-    background-repeat: no-repeat;
-    background-position: center;
+.sb_playFiled__shotShips {
+    background: #18191D;
 }
-
-.cellValue-miss {
-    background: #d0c39d /*cornsilk*/;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 32 32'><path d='M16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM16 29c-7.18 0-13-5.82-13-13s5.82-13 13-13 13 5.82 13 13-5.82 13-13 13z'></path><path d='M21 8l-5 5-5-5-3 3 5 5-5 5 3 3 5-5 5 5 3-3-5-5 5-5z'></path>></svg>");
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-.cellValue-hit {
-    background: orangered;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M10.031 32c-2.133-4.438-0.997-6.981 0.642-9.376 1.795-2.624 2.258-5.221 2.258-5.221s1.411 1.834 0.847 4.703c2.493-2.775 2.963-7.196 2.587-8.889 5.635 3.938 8.043 12.464 4.798 18.783 17.262-9.767 4.294-24.38 2.036-26.027 0.753 1.646 0.895 4.433-0.625 5.785-2.573-9.759-8.937-11.759-8.937-11.759 0.753 5.033-2.728 10.536-6.084 14.648-0.118-2.007-0.243-3.392-1.298-5.312-0.237 3.646-3.023 6.617-3.777 10.27-1.022 4.946 0.765 8.568 7.555 12.394z'></path></svg>");
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-.cellValue-kill {
-    background: maroon;
-    /*background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM16 20c-2.209 0-4-1.791-4-4s1.791-4 4-4c2.209 0 4 1.791 4 4s-1.791 4-4 4z'></path></svg>")*/;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-

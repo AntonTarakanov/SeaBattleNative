@@ -1,283 +1,494 @@
-opponent.addEventListener("click", shot);
-let logOpponent = document.getElementById("log-opponent");
-let logPlay = document.getElementById("log-play");
-let outPlay = document.getElementById("result-play");
-let outOpponent = document.getElementById("result-opponent");
-let banShot = ["kill","miss","hit"];
-class DataShot {
-    constructor (idShip, map, idFiled) {
-        this.coord = {};
-        this.idShip = idShip;
-        this.map = map;
-        this.idField = idFiled;
-    };
-    get Coord () {
-        return this.coord;
-    };
-    set Coord (infoShot) {
-        this.coord.x = infoShot[0];
-        this.coord.y = infoShot[1];
-    };
-    get mapValue () {
-        return this.map[this.coord.x][this.coord.y].value;
+const SeaBattleState = new SeaBattle();
+let isVictory = false;
+
+/**
+ * Функция-заглушка для ввода наименования игрока.
+ * @param {boolean} isPCPlayer
+ * @return {string}
+ */
+function enterYourName(isPCPlayer = false) {
+    return isPCPlayer ? DEFAULT_NIK_NAME.player1 : DEFAULT_NIK_NAME.player0;
+}
+
+/**
+ * Запускаем создание массивов данных, отрисовку полей и выполняем первый ход.
+ */
+function startSeaBattle() {
+    for (let i = 0; i < AMOUNT_PLAYERS; i++) {
+        const playerKey = 'player' + i;
+
+        // Рандомно устанавливаем корабли для всех игроков.
+        for (key in SHIP_INFO) {
+            if (SHIP_INFO.hasOwnProperty(key)) {
+                for (let j = 0; j < SHIP_INFO[key].count; j++) {
+                    setShipSomewhere(SHIP_INFO[key], playerKey, j);
+                }
+            }
+        }
+        createExampleMap(playerKey);
     }
 }
 
-class SmartOptions {
-    constructor (id) {
-        this.coord = {};
-        this.idShip = id;
-        this.course = undefined;
-        this.status = false;
-    };
-}
-let smartOptions = new SmartOptions();
+/**
+ * Возвращает координаты для конкретного корабля, в конкретной карте. Перед этим получает массив возможных значений.
+ * @param {object} shipInfo - общая информация о корабле.
+ * @param {string} playerName - наименование игрока
+ * @param {number} shipIndex - порядковй номер корабля. Необходимо для идентификации.
+ * @return {object}
+ */
+function setShipSomewhere(shipInfo, playerName, shipIndex) {
+    let result = null;
+    const freeCellList = getMapForCurrentShip(shipInfo, playerName);
 
-function chooseFirst (){
-    if (randomNumber(0,1) === 1) {
-        shotOpponent();
+    if (freeCellList.length) {
+        const initPosition = freeCellList[SeaBattle.getRandomNumber(freeCellList.length - 1)];
+        const shipId = [shipInfo.name, shipIndex].join('-');
+
+        Object.assign(initPosition, {
+            direction: getRandomDirection(initPosition),
+            size: shipInfo.size,
+            shipName: shipInfo.name,
+            playerName: playerName,
+            attribute: {
+                shipId: shipId
+            }
+        });
+
+        setShip(initPosition );
+        SeaBattleState.getCountShipList(playerName).push(PlayerState.getEmptyItemShipList(shipId, shipInfo.size, initPosition));
+        result = initPosition;
     }
+    return result;
 }
 
-function shot(event){
-    let dataShot = new DataShot(event.target.dataset.shipId, mapOpponent, "cellOp-");
-    dataShot.Coord = event.target.dataset.cellId.split(":");
-    if (inspectShot(dataShot)) {
-        doShot(dataShot);
+/**
+ * Возвращает массив с возможными координатами для конкретного корабля, в конкретной карте c конкретным направлением.
+ * [{x:1, y:2, direction: {} }]
+ * Потом рандомно кликаем на элемент массива и ставим туда корабль.
+ * @param {object} shipInfo
+ * @param {string} playerKey - наименования игрока
+ * @return {Array}
+ */
+function getMapForCurrentShip(shipInfo, playerKey) {
+    const resultArray = [];
+    const map = SeaBattleState.getMap(playerKey);
+    for (let i = 0; i < map.length; i++) {
+        if (map[i].type === CELL_TYPE.EMPTY) {
+            const checkCell = checkCanPutShip(map, i, shipInfo.size, playerKey);
+            if (checkCell.isHor || checkCell.isVert) {
+                checkCell.x = map[i].x;
+                checkCell.y = map[i].y;
+                resultArray.push(checkCell);
+            }
+        }
+    }
+    return resultArray;
+}
+
+/**
+ * @param {Array} map - массив в котором смотрим возможность установки.
+ * @param {number} cell - клетка которую проверяем.
+ * @param {object} shipSize - размер корабля.
+ * @param {string} playerName - наименование игрока.
+ * @return {object} объект со свойствами "isHor" и "isVert".
+ */
+function checkCanPutShip(map, cell, shipSize, playerName) {
+
+    function checkPosition(newPosition) {
+        let result = true;
+        if (SeaBattle.checkMapRange(newPosition)) {
+            const currentCell = SeaBattleState.getCellByPosition(newPosition, playerName);
+            if (currentCell.type !== CELL_TYPE.EMPTY) {
+                result = false;
+            }
+        } else {
+            result = false;
+        }
+        return result;
+    }
+
+    const startCell = map[cell];
+    const resultObj = {
+        isHor: true,
+        isVert: true
+    };
+
+    if (shipSize > 1) {
+        for (let i = 0; i < shipSize; i++) {
+            const newPosition = {};
+            if (resultObj.isHor) {
+                newPosition.x = startCell.x + i;
+                newPosition.y = startCell.y;
+                resultObj.isHor = checkPosition(newPosition);
+            }
+            if (resultObj.isVert) {
+                newPosition.x = startCell.x;
+                newPosition.y = startCell.y + i;
+                resultObj.isVert = checkPosition(newPosition);
+            }
+        }
+    }
+
+    return resultObj;
+}
+
+/**
+ * Установить корабль по переданным начальным координатам.
+ * @param {object} initPosition - начальные координаты клетки.
+ */
+function setShip(initPosition) {
+    const isHorDirection = initPosition.direction === AVAILABLE_DIRECTION.HOR;
+
+    // Устанавливаем сам корабль
+    for (let i = 0; i < initPosition.size; i++) {
+        const currentPosition = {
+            x: isHorDirection ? initPosition.x + i : initPosition.x,
+            y: isHorDirection ? initPosition.y : initPosition.y + i,
+        };
+
+        if (currentPosition && SeaBattle.checkMapRange(currentPosition)) {
+            const currentCell = SeaBattleState.getCellByPosition(currentPosition, initPosition.playerName);
+            Object.assign(currentCell, {
+                type: CELL_TYPE.SHIP,
+                name: initPosition.shipName
+            });
+            Object.assign(currentCell.attribute, initPosition.attribute);
+        }
+    }
+
+    // Устанавливаем область вокруг корабля.
+    setAreaAroundShip(initPosition, CELL_TYPE.AREA);
+}
+
+/**
+ * Установить область вокруг корабля.
+ * @param {object} initialPosition - начальные координаты корабля.
+ * @param {string} cellType - в какой тип перекрашивать клетки.
+ * @param {boolean} isRedraw - перерисовывать ли клетку.
+ */
+function setAreaAroundShip(initialPosition, cellType, isRedraw = false) {
+    getAroundCellList(initialPosition).forEach((item) => {
+        const position = Object.assign(item, { playerName: initialPosition.playerName });
+
+        if (position && SeaBattle.checkMapRange(position)) {
+            const currentCell = SeaBattleState.getCellByPosition(position, position.name);
+            currentCell.type = cellType;
+            if (isRedraw) {
+                redrawCellByPosition(position, currentCell);
+            }
+        }
+    });
+}
+
+/**
+ * Получить список клеток окружности корабля.
+ * @param {object} initialPosition - начальные координаты корабля.
+ * @return {Array}
+ */
+function getAroundCellList(initialPosition) {
+    const isHorDirection = initialPosition.direction === AVAILABLE_DIRECTION.HOR;
+    const aroundCellList = [];
+
+    // Записываем нос и зад корабля.
+    aroundCellList.push({
+        x: isHorDirection ? initialPosition.x + initialPosition.size : initialPosition.x,
+        y: isHorDirection ? initialPosition.y : initialPosition.y + initialPosition.size
+    });
+    aroundCellList.push({
+        x: isHorDirection ? initialPosition.x - 1 : initialPosition.x,
+        y: isHorDirection ? initialPosition.y : initialPosition.y - 1
+    });
+
+    // Записываем боковины корабля.
+    for (let i = -1; i < initialPosition.size + 1; i++) {
+        aroundCellList.push({
+            x: isHorDirection ? initialPosition.x + i : initialPosition.x + 1,
+            y: isHorDirection ? initialPosition.y - 1 : initialPosition.y + i
+        });
+        aroundCellList.push({
+            x: isHorDirection ? initialPosition.x + i : initialPosition.x - 1,
+            y: isHorDirection ? initialPosition.y + 1 : initialPosition.y + i
+        });
+    }
+    return aroundCellList;
+}
+
+/**
+ * Получить рандомное иди доступное значения направления для переданное начальной точки.
+ * @param {object} initialCoord - начальные координаты клетки.
+ * @return {string} направление.
+ */
+function getRandomDirection(initialCoord) {
+    let result;
+    if (initialCoord.isVert && initialCoord.isHor) {
+        result = SeaBattle.getRandomNumber(1) === 0 ? AVAILABLE_DIRECTION.HOR : AVAILABLE_DIRECTION.VER;
     } else {
-        outOpponent.textContent = "Click on the other place";
+        result = initialCoord.isVert ? AVAILABLE_DIRECTION.VER : AVAILABLE_DIRECTION.HOR;
+    }
+    return result;
+}
+
+/**
+ * Обработчик клика по таблице.
+ * @param {Event} event
+ */
+function onTableClick(event) {
+    const strPosition = event.target.getAttribute('dataPosition');
+    if (strPosition && !isVictory) {
+        const arrayPosition = strPosition.split('-');
+        const playerName = SeaBattleState.getPlayerKeyByMapId(event.currentTarget.getAttribute('id'));
+        if (playerName) {
+            const currentCell = SeaBattleState.getCellByPosition({
+                x: Number(arrayPosition[0]),
+                y: Number(arrayPosition[1])
+            }, playerName);
+            onCellClick(currentCell, event.target, playerName);
+        }
     }
 }
 
-function inspectShot (dataShot) {
-    if (isInsideBoxTwo(dataShot.coord.x, dataShot.coord.y)) {
-        for (let key in banShot){
-            if (dataShot.mapValue === banShot[key]) {
-                return false;
+/**
+ * TODO: Переписать полностью. Много костылей чтобы быстро отлаживать ход PC.
+ * Метод обрабатывает клик по конкретной клетке. Не по событию.
+ * @param {object} cell - объект с информацией о клетке.
+ * @param {object} cellTD - DOM-клетка.
+ * @param {string} playerName - наименование игрока, в которого стрельнули.
+ */
+function onCellClick(cell, cellTD, playerName) {
+    const isCanHandler = (type) => type !== CELL_TYPE.SHOT && type !== CELL_TYPE.KILL_AREA && type !== CELL_TYPE.SHOT_SHIPS;
+    const activePlayer = SeaBattleState.getEnemyList(playerName);
+    const isPCPlayer = SeaBattleState.isPCPlayer(activePlayer);
+
+    if (isCanHandler(cell.type)) {
+        if (cell.type === CELL_TYPE.SHIP) {
+            const countShipItem = SeaBattleState.getCountShipItem(playerName, cell.attribute.shipId);
+            countShipItem.countUnbroken = countShipItem.countUnbroken - 1;
+            const shipFinishOff = countShipItem.countUnbroken === 0;
+
+            if (shipFinishOff) {
+                setAreaAroundShip(countShipItem.startPosition, CELL_TYPE.KILL_AREA, true);
+            }
+
+            if (isPCPlayer) {
+                if (shipFinishOff) {
+                    SeaBattleState.setLastTurnInfo(activePlayer, false);
+                } else {
+                    SeaBattleState.setLastTurnInfo(activePlayer, true, cell);
+                }
+            }
+
+            cell.type = CELL_TYPE.SHOT_SHIPS;
+            redrawCell(cellTD, cell.type);
+
+            if (checkVictory(playerName)) {
+                alert('VICTORY');
+                isVictory = true;
+            } else {
+                if (isPCPlayer) {
+                    PCTurn(activePlayer);
+                }
+            }
+        } else {
+            cell.type = CELL_TYPE.SHOT;
+            redrawCell(cellTD, cell.type);
+
+            if (!isPCPlayer) {
+                PCTurn(playerName);
             }
         }
-    } else return false;
-    return true;
+    }
 }
 
-function ifOpponent (idField){
-    return idField === "cellPl-";
+/**
+ * Возвращает DOM-элемент по атрибуту position.
+ * @param {object} position
+ * @return
+ */
+function getCellTDByPosition(position) {
+    const mapTable = document.getElementById(SeaBattleState.getMapId(position.playerName));
+    const shipList = mapTable.getElementsByClassName('sb_playFiled__cell');
+    let result = null;
 
+    for (let i = 0; i < shipList.length; i++) {
+        const arrayPosition = shipList[i].getAttribute('dataPosition').split('-');
+        if (Number(arrayPosition[0]) === position.x && Number(arrayPosition[1]) === position.y) {
+            result = shipList[i];
+            break;
+        }
+    }
+
+    return result;
 }
 
-function doShot(dataShot) {
-    if (dataShot.mapValue === "ship") {
-        updateCell(dataShot.coord.x, dataShot.coord.y, "hit", dataShot.idField);
-        correctiveMap(dataShot, "hit");
-        correctiveShip(dataShot);
-        changeSmartOptions(dataShot, true);
-        allCountShipCalc(dataShot);
-        inspectEnd();
-        shipAnalysis(dataShot);
-        repeatePlay(dataShot);
+/**
+ * Точка входа для выполнения действия компьютером.
+ * @param {string} activePlayer - наименование активного игрока.
+ */
+function PCTurn(activePlayer) {
+    const enemyName = SeaBattleState.getEnemyList(activePlayer);
+
+    if (typeof enemyName === 'string') {
+        let shotList = [];
+
+        if (SeaBattleState.getIsSuccessLastTurn(activePlayer)) {
+            shotList = getFinishOffList(activePlayer, enemyName);
+        } else {
+            shotList = getShotList(enemyName);
+        }
+
+        if (shotList.length) {
+            const randomIndex = SeaBattle.getRandomNumber(shotList.length - 1);
+            doCellClick(Object.assign(shotList[randomIndex], { playerName: enemyName }));
+        }
+    }
+}
+
+/**
+ * Возвращает массив с координатами чтобы добить корабль.
+ * @param {string} activePlayer - наименование активного игрока.
+ * @param {string} enemyName - враг.
+ */
+function getFinishOffList(activePlayer, enemyName) {
+    const successTurn = SeaBattleState.getLastSuccessTurn(activePlayer);
+    const potentialTargetList = [];
+    const direction = findDirection(successTurn, enemyName);
+
+    if (direction) {
+        let canBack = true;
+        let canFront = true;
+
+        for (let i = 1; i < 4; i++) {
+            if (canBack) {
+                const currentPosition = direction === AVAILABLE_DIRECTION.HOR ? { x: successTurn.x - i, y: successTurn.y } : { x: successTurn.x, y: successTurn.y - i };
+                const resultCheck = checkPCFinishOffShot(currentPosition, enemyName);
+                canBack = resultCheck.can;
+
+                if (resultCheck.cell) {
+                    potentialTargetList.push(resultCheck.cell);
+                }
+            }
+            if (canFront) {
+                const currentPosition = direction === AVAILABLE_DIRECTION.HOR ? { x: successTurn.x + i, y: successTurn.y } : { x: successTurn.x, y: successTurn.y + i };
+                const resultCheck = checkPCFinishOffShot(currentPosition, enemyName);
+                canFront = resultCheck.can;
+
+                if (resultCheck.cell) {
+                    potentialTargetList.push(resultCheck.cell);
+                }
+            }
+            if (!canFront && canBack) {
+                break;
+            }
+        }
     } else {
-        updateCell(dataShot.coord.x, dataShot.coord.y, "miss", dataShot.idField);
-        correctiveMap(dataShot, "miss");
-        otherPlay(dataShot);
+        const enemyShotCell = getShotList(enemyName);
+        getNeighbouringCell(successTurn).forEach((aroundItem) => {
+            enemyShotCell.forEach((emptyItem) => {
+                if (aroundItem.x === emptyItem.x && aroundItem.y === emptyItem.y) {
+                    potentialTargetList.push(aroundItem);
+                }
+            });
+        });
     }
+
+    return potentialTargetList;
 }
 
-function inspectEnd (){
-    if (allCountShipPl === 0) {
-        alert("The computer won! Game over! The game will be rebooted");
-        location.reload();
-    }
-    if (allCountShipOpp === 0) {
-        alert("The Play won! The game will be rebooted");
-        location.reload();
-    }
-}
+/**
+ * Проверяет можем ли стрелять по этой клетке и стоит ли продолжать дальше перебирать знаения.
+ * @param {object} position - координаты.
+ * @param {object} enemyName - враг.
+ * @return {object}
+ */
+function checkPCFinishOffShot(position, enemyName) {
+    const result = {
+        can: true,
+        cell: null
+    };
 
-function identifyArrayShips(data){
-    if (data.idField === "cellOp-") return shipsOpponent;
-    if (data.idField === "cellPl-") return shipsPlay;
-}
-
-function shipAnalysis(data){
-    let arrayShips = identifyArrayShips(data);
-    if (arrayShips[data.idShip].size === 0) {
-        outOpponent.textContent = "Ship kill";
-        changeSmartOptions(data, false);
-        installRound(arrayShips[data.idShip].arrayRound, data.map, "kill");
-        let arrayRound = arrayShips[data.idShip].arrayRound;
-        for (let key in arrayRound){
-            if (isInsideBoxTwo(arrayRound[key].x, arrayRound[key].y)) {
-                updateCell(arrayRound[key].x, arrayRound[key].y, "kill", data.idField);
+    if (SeaBattle.checkMapRange(position)) {
+        const currentCell = SeaBattleState.getCellByPosition(position, enemyName);
+        if (currentCell.type === CELL_TYPE.SHOT_SHIPS) {
+            result.can = true;
+        } else {
+            if (currentCell.type !== CELL_TYPE.SHOT && currentCell.type !== CELL_TYPE.KILL_AREA) {
+                result.cell = currentCell;
             }
         }
-    }
-}
-
-function changeSmartOptions (dataShot, logic){
-    if (dataShot.idField === "cellPl-") {
-        if ( (logic === true)&&(smartOptions.status===false) ) {
-            smartOptions.status = true;
-            smartOptions.coord = dataShot.coord;
-            smartOptions.idShip = dataShot.idShip;
-        }
-        if (logic === false) {
-            smartOptions.status = false;
-            smartOptions.coord = {};
-            smartOptions.idShip = undefined;
-        }
-    }
-}
-
-function updateCell(x, y, value, idField){
-    let cell = document.getElementById(idField + [x, y].join(':'));
-    cell.className = 'cell cellValue-' + value;
-}
-
-function shotOpponent (){
-    if (smartOptions.status === true) {
-        smartShot();
     } else {
-        randomShot();
+        result.can = false;
     }
+
+    return result;
 }
 
-function createData(x, y){
-    let array = [x, y];
-    let id = getIdShip(array[0],array[1], "cellPl-");
-    let dataShot = new DataShot(id ,mapPeople, "cellPl-");
-    dataShot.Coord = array;
-    return dataShot;
+/**
+ * Возвращает примыкающие клетки.
+ * @param {object} position - координаты.
+ */
+function getNeighbouringCell(position) {
+    const neighbouringList = [];
+    [-1, 1].forEach((item) => {
+        neighbouringList.push( { x: position.x + item, y: position.y, direction: AVAILABLE_DIRECTION.HOR } );
+        neighbouringList.push( { x: position.x, y: position.y + item, direction: AVAILABLE_DIRECTION.VER } );
+    });
+    return neighbouringList;
 }
 
-function randomShot(){
-    let indicator = false;
-    do {
-        let dataShot = createData(randomNumber(0,9), randomNumber(0,9));
-        if (inspectShot(dataShot)) {
-            doShot(dataShot);
-            indicator = true;
-        }
-    } while (indicator === false);
-}
-
-function getIdShip (x, y, idField){
-    let cell = document.getElementById(idField + [x, y].join(':'));
-    return cell.dataset.shipId;
-}
-
-function correctiveShip (dataShot) {
-    let array = [];
-    if (dataShot.idField === "cellPl-") {
-        array = shipsPlay;
-    } else array = shipsOpponent;
-    let obj = array[dataShot.idShip];
-    obj.sizeReduce();
-}
-
-function correctiveMap (data, newValue){
-    data.map[data.coord.x][data.coord.y].value = newValue;
-}
-
-function smartShot(){
-    smartOptions.course = identifyCourse();
-    let dataShot = targetCourse();
-    doShot(dataShot);
-}
-
-function identifyCourse() {
-    let arrayCell = aboutCell();
-    for (let key in arrayCell){
-        if (isInsideBoxTwo(arrayCell[key].x, arrayCell[key].y)) {
-            if (mapPeople[arrayCell[key].x][arrayCell[key].y].value === "hit" ) {
-                return arrayCell[key].course;
+/**
+ * Просмотривает примыкающие клетки и определяет направление.
+ * @param {object} position - координаты.
+ * @param {string} playerKey
+ */
+function findDirection(position, playerKey) {
+    let result = null;
+    getNeighbouringCell(position).forEach((item) => {
+        if (SeaBattle.checkMapRange(item)) {
+            const cell = SeaBattleState.getCellByPosition(item, playerKey);
+            if (cell && cell.type === CELL_TYPE.SHOT_SHIPS) {
+                result = item.direction;
             }
         }
-    }
-    return undefined;
+    });
+    return result;
 }
 
-function aboutCell (){
-    let array = [];
-    array.push({ x: smartOptions.coord.x, y: smartOptions.coord.y-1, course: "horizontally" });
-    array.push({ x: smartOptions.coord.x, y: smartOptions.coord.y+1, course: "horizontally" });
-    array.push({ x: smartOptions.coord.x-1, y: smartOptions.coord.y, course: "vertically" });
-    array.push({ x: smartOptions.coord.x+1, y: smartOptions.coord.y, course: "vertically" });
-    return array;
-};
-
-function targetCourse () {
-    if (smartOptions.course === undefined) {
-        return getTarget();
-    }
-    if (smartOptions.course === "horizontally") {
-        return horizontallyTarget();
-    }
-    if (smartOptions.course === "vertically") {
-        return verticallyTarget();
-    }
+/**
+ * Точка входа для выполнения действия компьютером. Вероятно, нужно будет переписать.
+ * @param {object} position - координаты выстрела.
+ */
+function doCellClick(position) {
+    getCellTDByPosition(position).click();
 }
 
-    function getTarget (){
-    let array = aboutCell();
-    for (let key in array) {
-        //console.log("get target = "+array[key].x + ":"+array[key].y);
-        if (isInsideBoxTwo(array[key].x,array[key].y)) {
-            let dataShot = createData(array[key].x, array[key].y);
-            if (inspectShot(dataShot)) {
-                return dataShot;
-            }
+/**
+ * Возвращает координаты клеток в которые можно произвести выстрел.
+ * @param {string} enemyPlayer - наименование врага.
+ * @return {Array} массив объектов содержаших в себе координаты необстреленных клеток.
+ */
+function getShotList(enemyPlayer) {
+    const shotList = [];
+    SeaBattleState.getMap(enemyPlayer).forEach((item) => {
+        if (item.type !== CELL_TYPE.KILL_AREA && item.type !== CELL_TYPE.SHOT_SHIPS && item.type !== CELL_TYPE.SHOT) {
+            shotList.push(item);
         }
-    }
+    });
+    return shotList;
 }
 
-function horizontallyTarget () {
-    for (let i=1; i<4; i++) {
-        if (isInsideBoxTwo(smartOptions.coord.x, smartOptions.coord.y+i)) {
-            let dataShot = createData(smartOptions.coord.x, smartOptions.coord.y + i);
-            if (inspectShot(dataShot)) {
-                //console.log("horizontally target = " + smartOptions.coord.x + ":" + smartOptions.coord.y + i);
-                return dataShot;
-            }
+/**
+ * Проверяем остались ли ещё непотопленные корабли.
+ * @param {string} enemyPlayer
+ * @return {boolean}
+ */
+function checkVictory(enemyPlayer) {
+    let noEmptyList = [];
+    SeaBattleState[enemyPlayer].countShipList.forEach((item) => {
+        if (item.countUnbroken !== 0) {
+            noEmptyList.push(item);
         }
-        if (isInsideBoxTwo(smartOptions.coord.x, smartOptions.coord.y-i)) {
-            let dataShot = createData(smartOptions.coord.x, smartOptions.coord.y - i);
-            if (inspectShot(dataShot)) {
-                //console.log("horizontally target = " + smartOptions.coord.x + ":" + smartOptions.coord.y - i);
-                return dataShot;
-            }
-        }
-    }
+    });
+    return !noEmptyList.length;
 }
 
-function verticallyTarget () {
-    for (let i = 1; i < 4; i++) {
-        if (isInsideBoxTwo(smartOptions.coord.x + i, smartOptions.coord.y)) {
-            let dataShot = createData(smartOptions.coord.x + i, smartOptions.coord.y);
-            if (inspectShot(dataShot)) {
-                //console.log("vertically target = " + smartOptions.coord.x + i + ":" + smartOptions.coord.y);
-                return dataShot;
-            }
-        }
-        if (isInsideBoxTwo(smartOptions.coord.x - i, smartOptions.coord.y)) {
-            let dataShot = createData(smartOptions.coord.x - i, smartOptions.coord.y);
-            if (inspectShot(dataShot)) {
-                //console.log("vertically target = " + smartOptions.coord.x - i + ":" + smartOptions.coord.y);
-                return dataShot;
-            }
-        }
-    }
-}
-
-function otherPlay (dataShot){
-    if (dataShot.idField === "cellOp-") {
-        shotOpponent();
-    }
-}
-
-function repeatePlay (dataShot){
-    if (dataShot.idField === "cellPl-") {
-        shotOpponent();
-    }
-}
-
-chooseFirst();
+startSeaBattle();
