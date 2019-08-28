@@ -1,47 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>SeaBattle</title>
-
     <link rel="stylesheet" type="text/css" href="./style.css">
-
-
 </head>
 <body>
 
-<div class="fields">
-
-        <div class="field" id="opponent">
-            <p class="nameField">Opponent field</p>
-            <table class="table-field">
-                <tbody id="fieldOpponent">
-                </tbody>
-            </table>
-            <div class="info">
-                <p id="result-opponent">Result:</p>
-                <p id="log-opponent">Log</p>
-            </div>
+<div class="sb_workplace">
+    <div class="sb_header__wrap">
+        <div id="titlePlayer0">
+            player0
         </div>
-
-        <div class="field" id="people">
-            <p class="nameField">
-                Name field
-            </p>
-            <table class="table-field">
-                <tbody id="fieldPeople">
-                </tbody>
-            </table>
-            <div class="info">
-                <p id="result-play">Result:</p>
-                <p id="log-play">Log</p>
-            </div>
+        <div id="titlePlayer1">
+            player1
         </div>
-
+    </div>
+    <div class="sb_playFiled__wrap sb_workplace__smallMarginTop">
+        <div>
+            <div id="playerMapId"></div>
+        </div>
+        <div>
+            <div id="playerMapIdTwo"></div>
+        </div>
+    </div>
 </div>
 
-<script type="text/javascript" src="./script.js"></script>
-<script type="text/javascript" src="./game.js"></script>
-
+<script type="text/javascript" src="./base.js"></script>
 </body>
-</html>
