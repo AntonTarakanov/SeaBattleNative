@@ -5,4 +5,4 @@
 - Implemented a logical shot of the computer;
 - Automatic alignment of ships;
 
-https://antontarakanov.github.io/SeaBattleProject/
+https://antontarakanov.github.io/SeaBattleNative/
