@@ -14,6 +14,16 @@ class SeaBattle {
         return this[playerKey].getCountShipItem(shipId);
     }
 
+    getEntireShipItem(playerKey) {
+        const entireList = [];
+        this.getCountShipList(playerKey).forEach((item) => {
+            if (item.countUnbroken !== 0) {
+                entireList.push(item);
+            }
+        });
+        return entireList;
+    }
+
     getMap(playerKey) {
         return this[playerKey].map;
     }
@@ -40,6 +50,23 @@ class SeaBattle {
         return this[playerKey].isPCPlayer;
     }
 
+    setPCPlayerLevel(level) {
+        for (let key in this) {
+            if (this.hasOwnProperty(key) && this.isPCPlayer(key)) {
+                this[key].PCLevel = level;
+            }
+        }
+    }
+
+    getPCPlayerLevel() {
+        let result;
+        for (let key in this) {
+            if (this.hasOwnProperty(key) && this.isPCPlayer(key)) {
+                result = this[key].PCLevel;
+            }
+        }
+        return result;
+    }
 
     setLastTurnInfo(playerKey, isSuccess, position) {
         this[playerKey].setLastTurnInfo(isSuccess, position);
@@ -98,6 +125,10 @@ class PlayerState {
         this.handlers = { click: onTableClick };
         this.countShipList = [];
         this.lastTurnInfo = new LastTurnInfo();
+
+        if (isPCPlayer) {
+            this.PCLevel = RADIO_INPUT_VALUE.LARGE;
+        }
     }
 
     /**

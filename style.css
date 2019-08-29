@@ -12,6 +12,12 @@ body {
     background: #18191D;
 }
 
+#titlePlayer1 {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
 .sb_workplace {
     height: 100%;
     width: 100%;
