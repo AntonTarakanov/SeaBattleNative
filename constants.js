@@ -66,3 +66,17 @@ const DEFAULT_NIK_NAME = {
     player0: 'HumanPlayer',
     player1: 'PCPlayer'
 };
+
+/* @param {string} наименование <input type="radio> */
+const RADIO_INPUT_NAME = 'level';
+
+/* @param {object} соответствие значений <input type="radio> */
+const RADIO_INPUT_VALUE = {
+    SMALL: 'small',
+    MEDIUM: 'medium',
+    LARGE: 'large'
+};
+
+/* @param {string} какое действие следует выполнить*/
+const ACTION_KILL = 'kill';
+const ACTION_INSTALL = 'install';

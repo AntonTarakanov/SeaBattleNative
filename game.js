@@ -27,6 +27,9 @@ function startSeaBattle() {
         }
         createExampleMap(playerKey);
     }
+
+    // только для компьютера;
+    setRadioButtonHandler();
 }
 
 /**
@@ -38,7 +41,7 @@ function startSeaBattle() {
  */
 function setShipSomewhere(shipInfo, playerName, shipIndex) {
     let result = null;
-    const freeCellList = getMapForCurrentShip(shipInfo, playerName);
+    const freeCellList = getMapForCurrentShip(shipInfo, playerName, ACTION_INSTALL);
 
     if (freeCellList.length) {
         const initPosition = freeCellList[SeaBattle.getRandomNumber(freeCellList.length - 1)];
@@ -65,40 +68,46 @@ function setShipSomewhere(shipInfo, playerName, shipIndex) {
  * Возвращает массив с возможными координатами для конкретного корабля, в конкретной карте c конкретным направлением.
  * [{x:1, y:2, direction: {} }]
  * Потом рандомно кликаем на элемент массива и ставим туда корабль.
- * @param {object} shipInfo
- * @param {string} playerKey - наименования игрока
+ * @param {object} shipInfo - информация о корабле.
+ * @param {string} playerKey - наименования игрока.
+ * @param {string} action - наименование действия.
  * @return {Array}
  */
-function getMapForCurrentShip(shipInfo, playerKey) {
+function getMapForCurrentShip(shipInfo, playerKey, action) {
     const resultArray = [];
-    const map = SeaBattleState.getMap(playerKey);
-    for (let i = 0; i < map.length; i++) {
-        if (map[i].type === CELL_TYPE.EMPTY) {
-            const checkCell = checkCanPutShip(map, i, shipInfo.size, playerKey);
-            if (checkCell.isHor || checkCell.isVert) {
-                checkCell.x = map[i].x;
-                checkCell.y = map[i].y;
-                resultArray.push(checkCell);
+    let checkCallback;
+    if (action === ACTION_KILL) {
+        checkCallback = (type) => type === CELL_TYPE.KILL_AREA || type === CELL_TYPE.SHOT|| type === CELL_TYPE.SHOT_SHIPS;
+    } else {
+        checkCallback = (type) => type !== CELL_TYPE.EMPTY;
+    }
+    SeaBattleState.getMap(playerKey).forEach((item) => {
+        if (!checkCallback(item.type)) {
+            const checkCell = checkCanActionShip(Object.assign({}, item, {
+                size: shipInfo.size,
+                playerKey: playerKey
+            }), checkCallback);
+            if (checkCell.isHor || checkCell.isVer) {
+                resultArray.push(Object.assign(checkCell, item));
             }
         }
-    }
+    });
     return resultArray;
 }
 
 /**
- * @param {Array} map - массив в котором смотрим возможность установки.
- * @param {number} cell - клетка которую проверяем.
- * @param {object} shipSize - размер корабля.
- * @param {string} playerName - наименование игрока.
- * @return {object} объект со свойствами "isHor" и "isVert".
+ * Проверить, что в данную клетку можно установить корабль.
+ * @param {number} startCell - клетка и информация о ней (которую проверяем).
+ * @param {function} checkCallback - необходимо условие.
+ * @return {object} объект со свойствами "isHor" и "isVer".
  */
-function checkCanPutShip(map, cell, shipSize, playerName) {
+function checkCanActionShip(startCell, checkCallback) {
 
     function checkPosition(newPosition) {
         let result = true;
         if (SeaBattle.checkMapRange(newPosition)) {
-            const currentCell = SeaBattleState.getCellByPosition(newPosition, playerName);
-            if (currentCell.type !== CELL_TYPE.EMPTY) {
+            const currentCell = SeaBattleState.getCellByPosition(newPosition, startCell.playerKey);
+            if (checkCallback(currentCell.type)) {
                 result = false;
             }
         } else {
@@ -107,24 +116,27 @@ function checkCanPutShip(map, cell, shipSize, playerName) {
         return result;
     }
 
-    const startCell = map[cell];
     const resultObj = {
         isHor: true,
-        isVert: true
+        isVer: true
     };
 
-    if (shipSize > 1) {
-        for (let i = 0; i < shipSize; i++) {
-            const newPosition = {};
+    if (startCell.size > 1) {
+        for (let i = 0; i < startCell.size; i++) {
             if (resultObj.isHor) {
-                newPosition.x = startCell.x + i;
-                newPosition.y = startCell.y;
-                resultObj.isHor = checkPosition(newPosition);
+                resultObj.isHor = checkPosition({
+                    x: startCell.x + i,
+                    y: startCell.y
+                });
             }
-            if (resultObj.isVert) {
-                newPosition.x = startCell.x;
-                newPosition.y = startCell.y + i;
-                resultObj.isVert = checkPosition(newPosition);
+            if (resultObj.isVer) {
+                resultObj.isVer = checkPosition({
+                    x: startCell.x,
+                    y: startCell.y + i
+                });
+            }
+            if (!resultObj.isVer && !resultObj.isHor) {
+                break;
             }
         }
     }
@@ -220,10 +232,10 @@ function getAroundCellList(initialPosition) {
  */
 function getRandomDirection(initialCoord) {
     let result;
-    if (initialCoord.isVert && initialCoord.isHor) {
+    if (initialCoord.isVer && initialCoord.isHor) {
         result = SeaBattle.getRandomNumber(1) === 0 ? AVAILABLE_DIRECTION.HOR : AVAILABLE_DIRECTION.VER;
     } else {
-        result = initialCoord.isVert ? AVAILABLE_DIRECTION.VER : AVAILABLE_DIRECTION.HOR;
+        result = initialCoord.isVer ? AVAILABLE_DIRECTION.VER : AVAILABLE_DIRECTION.HOR;
     }
     return result;
 }
@@ -326,21 +338,53 @@ function getCellTDByPosition(position) {
  */
 function PCTurn(activePlayer) {
     const enemyName = SeaBattleState.getEnemyList(activePlayer);
+    const PCLevel = SeaBattleState.getPCPlayerLevel();
 
     if (typeof enemyName === 'string') {
         let shotList = [];
 
-        if (SeaBattleState.getIsSuccessLastTurn(activePlayer)) {
-            shotList = getFinishOffList(activePlayer, enemyName);
-        } else {
+        if (PCLevel === RADIO_INPUT_VALUE.SMALL) {
             shotList = getShotList(enemyName);
+        } else {
+            if (SeaBattleState.getIsSuccessLastTurn(activePlayer)) {
+                shotList = getFinishOffList(activePlayer, enemyName);
+            } else {
+                if (PCLevel === RADIO_INPUT_VALUE.LARGE) {
+                    shotList = getShotListByShipsSize(enemyName);
+                } else {
+                    shotList = getShotList(enemyName);
+                }
+            }
         }
 
         if (shotList.length) {
             const randomIndex = SeaBattle.getRandomNumber(shotList.length - 1);
+            console.log(shotList[randomIndex]);
             doCellClick(Object.assign(shotList[randomIndex], { playerName: enemyName }));
         }
     }
+}
+
+/**
+ * Возвращает массив с координатами выстрелов в соответствии с размером кораблей.
+ * Если корабль занимает 4 клетки, не нужно стрелять в область где доступно только 3 клетки.
+ * @param {string} enemyName - наименование врага в которого нужно выстрелить.
+ */
+function getShotListByShipsSize(enemyName) {
+    let result = [];
+    let maxSize = 0;
+
+    SeaBattleState.getEntireShipItem(enemyName).forEach((item) => {
+        if (item.countUnbroken > maxSize) {
+            maxSize = item.countUnbroken;
+        }
+    });
+    if (maxSize > 0) {
+        result = getMapForCurrentShip({ size: maxSize }, enemyName, ACTION_KILL);
+    } else {
+        result = getShotList(enemyName);
+    }
+    return result;
 }
 
 /**
@@ -491,4 +535,31 @@ function checkVictory(enemyPlayer) {
     return !noEmptyList.length;
 }
 
+/**
+ * Обработчик смены уровня сложности.
+ * @param {Event} event
+ */
+function onChangePCLevel(event) {
+    SeaBattleState.setPCPlayerLevel(event.target.value);
+}
+
+/**
+ * Ставим обработчики для <input type="radio>.
+ */
+function setRadioButtonHandler() {
+    let defaultLevel;
+    const radioList = document.getElementsByName(RADIO_INPUT_NAME);
+    radioList.forEach((item) => {
+        item.addEventListener('click', onChangePCLevel);
+        if (item.checked) {
+            defaultLevel = item.value;
+        }
+    });
+
+    if (defaultLevel) {
+        SeaBattleState.setPCPlayerLevel(defaultLevel);
+    }
+}
+
 startSeaBattle();
+
