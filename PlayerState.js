@@ -114,6 +114,44 @@ class SeaBattle {
         return position.x >= 0 && position.y >= 0 && position.x <= 9 && position.y <= 9
     }
 
+    /**
+     * Проверить соответствие координат X и Y.
+     * @param {object} firstPosition - объект со свойствами x и y.
+     * @param {object} secondPosition - объект со свойствами x и y.
+     */
+    static matchCoordinate(firstPosition, secondPosition) {
+        return firstPosition.x === secondPosition.x && firstPosition.y === secondPosition.y
+    }
+
+    /**
+     * Проверяет можно ли выполнять выстрел в данный тип клетки.
+     * @param {string} cellType - тип клетки.
+     * @return {boolean}
+     */
+    static checkTypeForShot(cellType) {
+        return !SeaBattle.getInvalidShotList().includes(cellType);
+    }
+
+    /**
+     * Возвращает массив значений клетки по которым нельзя производить выстрел.
+     * @return {array}
+     */
+    static getInvalidShotList() {
+        return [CELL_TYPE.KILL_AREA, CELL_TYPE.SHOT_SHIPS, CELL_TYPE.SHOT];
+    }
+
+    /**
+     * Возвращает объект с координатами по переданным атрибутам.
+     * @param {string} dataPosition
+     * @return {object}
+     */
+    static getPositionByAttribute(dataPosition) {
+        const arrayPosition = dataPosition.split('-');
+        return {
+            x: Number(arrayPosition[0]),
+            y: Number(arrayPosition[1])
+        };
+    }
 }
 
 class PlayerState {
@@ -134,32 +172,14 @@ class PlayerState {
     /**
      * Возвращает объект из массива-карты по переданным координатам.
      * @param {object} position - координаты клетки.
-     * @return {null|number}
+     * @return {undefined|object}
      */
     getCellByPosition(position) {
-        let itemResult = null;
-        this.map.every((item) => {
-            let everyResult = true;
-            if (item.x === position.x && item.y === position.y) {
-                itemResult = item;
-                everyResult = false;
-            }
-            return everyResult;
-        });
-        return itemResult;
+        return this.map.find(item => SeaBattle.matchCoordinate(item, position));
     }
 
     getCountShipItem(shipId) {
-        let returnResult = null;
-        this.countShipList.every((item) => {
-            let result = true;
-            if (item.name === shipId) {
-                returnResult = item;
-                result = false;
-            }
-            return result;
-        });
-        return returnResult;
+        return this.countShipList.find(item => item.name === shipId);
     }
 
     setLastTurnInfo(isSuccess, position) {
@@ -202,7 +222,7 @@ class PlayerState {
     }
 
     /**
-     * GAME_METHOD. Метод возвращает пустой элемент для массива "ShipList".
+     * Метод возвращает пустой элемент для массива "ShipList".
      * @param {string} name - наименование (идентификатор) корабля.
      * @param {number} countUnbroken - кол-во неповреждённых клеток.
      * @param {object} startPosition - стартовые координаты корабля.

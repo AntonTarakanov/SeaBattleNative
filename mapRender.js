@@ -1,3 +1,14 @@
+/* Классы для клетки раскиданные по константам */
+const CLASS_BY_TYPE = {
+    EMPTY: 'sb_playFiled__water',
+    SHIP: 'sb_playFiled__ship',
+    SHOT: 'sb_playFiled__shot',
+    KILL_AREA: 'sb_playFiled__killArea',
+    SHOT_SHIPS: 'sb_playFiled__shotShips',
+    AREA: 'sb_playFiled__area',
+    CELL: 'sb_playFiled__cell'
+};
+
 /**
  * Функция создаёт разметку (игровое поле) для переданного игрока по данным из "SeaBattleState".
  * @param {string} playerName - наименование игрока для которого рисуем игровое поле.
@@ -6,6 +17,7 @@ function createExampleMap(playerName) {
     const mapElement = document.getElementById(SeaBattleState.getMapId(playerName));
     const tableElement = document.createElement('table');
     const mapElementChild = mapElement.getElementsByTagName('table');
+    const defaultTableClass = [CLASS_BY_TYPE.CELL, CLASS_BY_TYPE.AREA].join(' ');
 
     for (let i = 0; i < MAP_SIZE.SIZE_Y; i++) {
         const rowElement = document.createElement('tr');
@@ -16,7 +28,7 @@ function createExampleMap(playerName) {
                 x: j,
             }, playerName);
 
-            cellElement.className = SeaBattleState.isPCPlayer(playerName) ? 'sb_playFiled__cell sb_playFiled__area' : getClassByType(cellInfo.type, playerName);
+            cellElement.className = SeaBattleState.isPCPlayer(playerName) ? defaultTableClass : getClassByType(cellInfo.type, playerName);
             setCellAttribute(cellElement, cellInfo);
             rowElement.appendChild(cellElement);
         }
@@ -34,7 +46,7 @@ function createExampleMap(playerName) {
 
 /**
  * Устанавливаем атрибуты для клетки.
- * @param {object} cellElement - DOM-елемент клетки таблицы.
+ * @param {object} cellElement - DOM-елемент клетки.
  * @param {object} cellInfo - информация о клетке.
  */
 function setCellAttribute(cellElement, cellInfo) {
@@ -68,31 +80,31 @@ function getClassByType(type) {
     let result = '';
     switch(type) {
         case CELL_TYPE.EMPTY: {
-            result = 'sb_playFiled__water';
+            result = CLASS_BY_TYPE.EMPTY;
             break;
         }
         case CELL_TYPE.SHIP: {
-            result = 'sb_playFiled__ship';
+            result = CLASS_BY_TYPE.SHIP;
             break;
         }
         case CELL_TYPE.SHOT: {
-            result = 'sb_playFiled__shot';
+            result = CLASS_BY_TYPE.SHOT;
             break;
         }
         case CELL_TYPE.KILL_AREA: {
-            result = 'sb_playFiled__killArea';
+            result = CLASS_BY_TYPE.KILL_AREA;
             break;
         }
         case CELL_TYPE.SHOT_SHIPS: {
-            result = 'sb_playFiled__shotShips';
+            result = CLASS_BY_TYPE.SHOT_SHIPS;
             break;
         }
         default: {
-            result = 'sb_playFiled__area';
+            result = CLASS_BY_TYPE.AREA;
             break;
         }
     }
-    return ['sb_playFiled__cell', result].join(' ');
+    return [CLASS_BY_TYPE.CELL, result].join(' ');
 }
 
 /**
@@ -122,13 +134,14 @@ function redrawCellByPosition(position, cell) {
  * @return
  */
 function getCellTDByPosition(position) {
-    const mapTable = document.getElementById(getMapIdByPlayer(position.playerName));
-    const shipList = mapTable.getElementsByClassName('sb_playFiled__cell');
+    const mapTable = document.getElementById(SeaBattleState.getMapId(position.playerName));
+    const shipList = mapTable.getElementsByClassName(CLASS_BY_TYPE.CELL);
     let result = null;
 
     for (let i = 0; i < shipList.length; i++) {
         const arrayPosition = shipList[i].getAttribute('dataPosition').split('-');
-        if (Number(arrayPosition[0]) === position.x && Number(arrayPosition[1]) === position.y) {
+        const matchResult = SeaBattle.matchCoordinate(position, SeaBattle.getPositionByAttribute(arrayPosition));
+        if (matchResult) {
             result = shipList[i];
             break;
         }
