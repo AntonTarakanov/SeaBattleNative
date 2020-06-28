@@ -1,4 +1,5 @@
 const SeaBattleState = new SeaBattle();
+const cellHelpers = {};
 let isVictory = false;
 
 /**
@@ -75,14 +76,14 @@ function setShipSomewhere(shipInfo, playerName, shipIndex) {
  */
 function getMapForCurrentShip(shipInfo, playerKey, action) {
     const resultArray = [];
-    let checkCallback;
-    if (action === ACTION_KILL) {
-        checkCallback = (type) => type === CELL_TYPE.KILL_AREA || type === CELL_TYPE.SHOT|| type === CELL_TYPE.SHOT_SHIPS;
-    } else {
-        checkCallback = (type) => type !== CELL_TYPE.EMPTY;
-    }
-    SeaBattleState.getMap(playerKey).forEach((item) => {
+    const checkCallback = action === ACTION_KILL
+        ? type => cellHelpers.isUsedCell(type)
+        : type => !cellHelpers.isEmptyCell(type);
+
+    SeaBattleState.getMap(playerKey).forEach(item => {
         if (!checkCallback(item.type)) {
+
+            /* TODO: возможно, есть смысл проверять клетки на этапе построения общего массива для встраивание корабля */
             const checkCell = checkCanActionShip(Object.assign({}, item, {
                 size: shipInfo.size,
                 playerKey: playerKey
@@ -92,13 +93,14 @@ function getMapForCurrentShip(shipInfo, playerKey, action) {
             }
         }
     });
+
     return resultArray;
 }
 
 /**
  * Проверить, что в данную клетку можно установить корабль.
  * @param {number} startCell - клетка и информация о ней (которую проверяем).
- * @param {function} checkCallback - необходимо условие.
+ * @param {function} checkCallback - необходимое условие.
  * @return {object} объект со свойствами "isHor" и "isVer".
  */
 function checkCanActionShip(startCell, checkCallback) {
@@ -121,6 +123,7 @@ function checkCanActionShip(startCell, checkCallback) {
         isVer: true
     };
 
+    /* "> 1" т.к. сейчас строится общий массив с проверкой на одну клетку. */
     if (startCell.size > 1) {
         for (let i = 0; i < startCell.size; i++) {
             if (resultObj.isHor) {
@@ -179,8 +182,8 @@ function setShip(initPosition) {
  * @param {boolean} isRedraw - перерисовывать ли клетку.
  */
 function setAreaAroundShip(initialPosition, cellType, isRedraw = false) {
-    getAroundCellList(initialPosition).forEach((item) => {
-        const position = Object.assign(item, { playerName: initialPosition.playerName });
+    getAroundCellList(initialPosition).forEach(item => {
+        const position = {...item, playerName: initialPosition.playerName};
 
         if (position && SeaBattle.checkMapRange(position)) {
             const currentCell = SeaBattleState.getCellByPosition(position, position.name);
@@ -211,8 +214,7 @@ function getAroundCellList(initialPosition) {
 
     // Записываем боковины корабля.
     for (let i = -1; i < initialPosition.size + 1; i++) {
-        // TODO: массив дублируется.
-        [-1, 1].forEach(item => {
+        ONES_LIST.forEach(item => {
             aroundCellList.push({
                 x: isHorDirection ? initialPosition.x + i : initialPosition.x + item,
                 y: isHorDirection ? initialPosition.y - item : initialPosition.y + i
@@ -223,18 +225,14 @@ function getAroundCellList(initialPosition) {
 }
 
 /**
- * Получить рандомное иди доступное значения направления для переданное начальной точки.
+ * Получить рандомное иди доступное значения направления для переданной начальной точки.
  * @param {object} initialPosition - начальные координаты клетки.
  * @return {string} направление.
  */
 function getRandomDirection(initialPosition) {
-    let result;
-    if (initialPosition.isVer && initialPosition.isHor) {
-        result = SeaBattle.getRandomNumber(1) === 0 ? AVAILABLE_DIRECTION.HOR : AVAILABLE_DIRECTION.VER;
-    } else {
-        result = initialPosition.isVer ? AVAILABLE_DIRECTION.VER : AVAILABLE_DIRECTION.HOR;
-    }
-    return result;
+    return initialPosition.isVer && initialPosition.isHor
+        ? SeaBattle.getRandomNumber(1) === 0 ? AVAILABLE_DIRECTION.HOR : AVAILABLE_DIRECTION.VER
+        : initialPosition.isVer ? AVAILABLE_DIRECTION.VER : AVAILABLE_DIRECTION.HOR;
 }
 
 /**
@@ -242,16 +240,19 @@ function getRandomDirection(initialPosition) {
  * @param {Event} event
  */
 function onTableClick(event) {
-    const strPosition = event.target.getAttribute('dataPosition');
-    if (strPosition && !isVictory) {
-        const arrayPosition = strPosition.split('-');
-        const playerName = SeaBattleState.getPlayerKeyByMapId(event.currentTarget.getAttribute('id'));
-        if (playerName) {
-            const currentCell = SeaBattleState.getCellByPosition({
-                x: Number(arrayPosition[0]),
-                y: Number(arrayPosition[1])
-            }, playerName);
-            onCellClick(currentCell, event.target, playerName);
+    if (!isVictory) {
+        const strPosition = event.target.getAttribute('dataPosition');
+
+        if (strPosition) {
+            const arrayPosition = strPosition.split('-');
+            const playerName = SeaBattleState.getPlayerKeyByMapId(event.currentTarget.getAttribute('id'));
+            if (playerName) {
+                const currentCell = SeaBattleState.getCellByPosition({
+                    x: Number(arrayPosition[0]),
+                    y: Number(arrayPosition[1])
+                }, playerName);
+                onCellClick(currentCell, event.target, playerName);
+            }
         }
     }
 }
@@ -466,9 +467,7 @@ function checkPCFinishOffShot(position, enemyName) {
  */
 function getNeighbouringCell(position) {
     const neighbouringList = [];
-    // TODO: проверить что не дублируется и убрать.
-    const oneList = [-1, 1];
-    oneList.forEach(item => {
+    ONES_LIST.forEach(item => {
         neighbouringList.push( { x: position.x + item, y: position.y, direction: AVAILABLE_DIRECTION.HOR } );
         neighbouringList.push( { x: position.x, y: position.y + item, direction: AVAILABLE_DIRECTION.VER } );
     });
@@ -572,5 +571,8 @@ function setRadioButtonHandler() {
         SeaBattleState.setPCPlayerLevel(defaultLevel);
     }
 }
+
+cellHelpers.isEmptyCell = type => type === CELL_TYPE.EMPTY;
+cellHelpers.isUsedCell = type => USED_CELL.includes(type);
 
 startSeaBattle();

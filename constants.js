@@ -80,3 +80,7 @@ const RADIO_INPUT_VALUE = {
 /* @param {string} какое действие следует выполнить*/
 const ACTION_KILL = 'kill';
 const ACTION_INSTALL = 'install';
+
+const USED_CELL = [CELL_TYPE.KILL_AREA, CELL_TYPE.SHOT, CELL_TYPE.SHOT_SHIPS];
+
+const ONES_LIST = [-1, 1];
