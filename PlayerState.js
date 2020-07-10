@@ -109,6 +109,7 @@ class SeaBattle {
     /**
      * Проверить соответствие возможному диапазону.
      * @param {object} position - объект со свойствами x и y.
+     * @return {boolean}
      */
     static checkMapRange(position) {
         return position.x >= 0 && position.y >= 0 && position.x <= 9 && position.y <= 9
@@ -118,7 +119,7 @@ class SeaBattle {
 
 class PlayerState {
     constructor(nikName, isPCPlayer, documentMapId) {
-        this.nikName = nikName;
+        // this.nikName = nikName;
         this.isPCPlayer = isPCPlayer;
         this.documentMapId = documentMapId;
         this.map = PlayerState.createEmptyMap();
@@ -140,7 +141,7 @@ class PlayerState {
         let itemResult = null;
         this.map.every((item) => {
             let everyResult = true;
-            if (item.x === position.x && item.y === position.y) {
+            if (isEqualCoordinate(item, position)) {
                 itemResult = item;
                 everyResult = false;
             }

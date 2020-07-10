@@ -1,3 +1,5 @@
+/* TODO: файл можно переименовать, т.к. по смыслу тут методы для работы с DOM. */
+
 /**
  * Функция создаёт разметку (игровое поле) для переданного игрока по данным из "SeaBattleState".
  * @param {string} playerName - наименование игрока для которого рисуем игровое поле.
@@ -117,22 +119,42 @@ function redrawCellByPosition(position, cell) {
 }
 
 /**
+ * TODO: можно добавить метод для сравнения координат.
+ * TODO: можно добавить констунту для содержания классов.
  * Возвращает DOM-элемент по атрибуту position.
  * @param {object} position
  * @return
  */
 function getCellTDByPosition(position) {
-    const mapTable = document.getElementById(getMapIdByPlayer(position.playerName));
+    const mapTable = document.getElementById(SeaBattleState.getMapId(position.playerName));
     const shipList = mapTable.getElementsByClassName('sb_playFiled__cell');
     let result = null;
 
     for (let i = 0; i < shipList.length; i++) {
-        const arrayPosition = shipList[i].getAttribute('dataPosition').split('-');
-        if (Number(arrayPosition[0]) === position.x && Number(arrayPosition[1]) === position.y) {
+        const elemLocation = getLocationByDOMElem(shipList[i]);
+        if (isEqualCoordinate(elemLocation, position)) {
             result = shipList[i];
             break;
         }
     }
 
+    return result;
+}
+
+/**
+ * Получить координаты у переданного DOM-элемента.
+ * @param {object} elem
+ * @return {object}
+ */
+function getLocationByDOMElem(elem) {
+    const strPosition = elem.getAttribute(ATTRIBUTE_NAME.POSITION);
+    let result = null;
+
+    if (strPosition) {
+        const arrayPosition = strPosition.split('-');
+        result = { x: Number(arrayPosition[0]), y: Number(arrayPosition[1]) };
+    } else {
+        console.log('Не удалось получить координаты DOM-элемента');
+    }
     return result;
 }

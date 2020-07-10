@@ -84,3 +84,9 @@ const ACTION_INSTALL = 'install';
 const USED_CELL = [CELL_TYPE.KILL_AREA, CELL_TYPE.SHOT, CELL_TYPE.SHOT_SHIPS];
 
 const ONES_LIST = [-1, 1];
+
+/* Используемые атрибуты у DOM-элементов. */
+const ATTRIBUTE_NAME = {
+    POSITION: 'dataPosition',
+    ID: 'id'
+};
