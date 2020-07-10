@@ -1,4 +1,5 @@
 const SeaBattleState = new SeaBattle();
+const cellHelpers = {};
 let isVictory = false;
 
 /**
@@ -37,10 +38,8 @@ function startSeaBattle() {
  * @param {object} shipInfo - общая информация о корабле.
  * @param {string} playerName - наименование игрока
  * @param {number} shipIndex - порядковй номер корабля. Необходимо для идентификации.
- * @return {object}
  */
 function setShipSomewhere(shipInfo, playerName, shipIndex) {
-    let result = null;
     const freeCellList = getMapForCurrentShip(shipInfo, playerName, ACTION_INSTALL);
 
     if (freeCellList.length) {
@@ -61,7 +60,6 @@ function setShipSomewhere(shipInfo, playerName, shipIndex) {
         SeaBattleState.getCountShipList(playerName).push(PlayerState.getEmptyItemShipList(shipId, shipInfo.size, initPosition));
         result = initPosition;
     }
-    return result;
 }
 
 /**
@@ -75,14 +73,14 @@ function setShipSomewhere(shipInfo, playerName, shipIndex) {
  */
 function getMapForCurrentShip(shipInfo, playerKey, action) {
     const resultArray = [];
-    let checkCallback;
-    if (action === ACTION_KILL) {
-        checkCallback = (type) => type === CELL_TYPE.KILL_AREA || type === CELL_TYPE.SHOT|| type === CELL_TYPE.SHOT_SHIPS;
-    } else {
-        checkCallback = (type) => type !== CELL_TYPE.EMPTY;
-    }
-    SeaBattleState.getMap(playerKey).forEach((item) => {
+    const checkCallback = action === ACTION_KILL
+        ? type => cellHelpers.isUsedCell(type)
+        : type => !cellHelpers.isEmptyCell(type);
+
+    SeaBattleState.getMap(playerKey).forEach(item => {
         if (!checkCallback(item.type)) {
+
+            /* TODO: возможно, есть смысл проверять клетки на этапе построения общего массива для встраивание корабля */
             const checkCell = checkCanActionShip(Object.assign({}, item, {
                 size: shipInfo.size,
                 playerKey: playerKey
@@ -92,13 +90,14 @@ function getMapForCurrentShip(shipInfo, playerKey, action) {
             }
         }
     });
+
     return resultArray;
 }
 
 /**
  * Проверить, что в данную клетку можно установить корабль.
  * @param {number} startCell - клетка и информация о ней (которую проверяем).
- * @param {function} checkCallback - необходимо условие.
+ * @param {function} checkCallback - необходимое условие.
  * @return {object} объект со свойствами "isHor" и "isVer".
  */
 function checkCanActionShip(startCell, checkCallback) {
@@ -121,6 +120,7 @@ function checkCanActionShip(startCell, checkCallback) {
         isVer: true
     };
 
+    /* "> 1" т.к. сейчас строится общий массив с проверкой на одну клетку. */
     if (startCell.size > 1) {
         for (let i = 0; i < startCell.size; i++) {
             if (resultObj.isHor) {
@@ -135,9 +135,7 @@ function checkCanActionShip(startCell, checkCallback) {
                     y: startCell.y + i
                 });
             }
-            if (!resultObj.isVer && !resultObj.isHor) {
-                break;
-            }
+            if (!resultObj.isVer && !resultObj.isHor) break;
         }
     }
 
@@ -179,8 +177,8 @@ function setShip(initPosition) {
  * @param {boolean} isRedraw - перерисовывать ли клетку.
  */
 function setAreaAroundShip(initialPosition, cellType, isRedraw = false) {
-    getAroundCellList(initialPosition).forEach((item) => {
-        const position = Object.assign(item, { playerName: initialPosition.playerName });
+    getAroundCellList(initialPosition).forEach(item => {
+        const position = {...item, playerName: initialPosition.playerName};
 
         if (position && SeaBattle.checkMapRange(position)) {
             const currentCell = SeaBattleState.getCellByPosition(position, position.name);
@@ -202,42 +200,34 @@ function getAroundCellList(initialPosition) {
     const aroundCellList = [];
 
     // Записываем нос и зад корабля.
-    aroundCellList.push({
-        x: isHorDirection ? initialPosition.x + initialPosition.size : initialPosition.x,
-        y: isHorDirection ? initialPosition.y : initialPosition.y + initialPosition.size
-    });
-    aroundCellList.push({
-        x: isHorDirection ? initialPosition.x - 1 : initialPosition.x,
-        y: isHorDirection ? initialPosition.y : initialPosition.y - 1
+    [initialPosition.size, -1].forEach(item => {
+        aroundCellList.push({
+            x: isHorDirection ? initialPosition.x + item : initialPosition.x,
+            y: isHorDirection ? initialPosition.y : initialPosition.y + item
+        });
     });
 
     // Записываем боковины корабля.
     for (let i = -1; i < initialPosition.size + 1; i++) {
-        aroundCellList.push({
-            x: isHorDirection ? initialPosition.x + i : initialPosition.x + 1,
-            y: isHorDirection ? initialPosition.y - 1 : initialPosition.y + i
-        });
-        aroundCellList.push({
-            x: isHorDirection ? initialPosition.x + i : initialPosition.x - 1,
-            y: isHorDirection ? initialPosition.y + 1 : initialPosition.y + i
+        ONES_LIST.forEach(item => {
+            aroundCellList.push({
+                x: isHorDirection ? initialPosition.x + i : initialPosition.x + item,
+                y: isHorDirection ? initialPosition.y - item : initialPosition.y + i
+            });
         });
     }
     return aroundCellList;
 }
 
 /**
- * Получить рандомное иди доступное значения направления для переданное начальной точки.
- * @param {object} initialCoord - начальные координаты клетки.
+ * Получить рандомное иди доступное значения направления для переданной начальной точки.
+ * @param {object} initialPosition - начальные координаты клетки.
  * @return {string} направление.
  */
-function getRandomDirection(initialCoord) {
-    let result;
-    if (initialCoord.isVer && initialCoord.isHor) {
-        result = SeaBattle.getRandomNumber(1) === 0 ? AVAILABLE_DIRECTION.HOR : AVAILABLE_DIRECTION.VER;
-    } else {
-        result = initialCoord.isVer ? AVAILABLE_DIRECTION.VER : AVAILABLE_DIRECTION.HOR;
-    }
-    return result;
+function getRandomDirection(initialPosition) {
+    return initialPosition.isVer && initialPosition.isHor
+        ? SeaBattle.getRandomNumber(1) === 0 ? AVAILABLE_DIRECTION.HOR : AVAILABLE_DIRECTION.VER
+        : initialPosition.isVer ? AVAILABLE_DIRECTION.VER : AVAILABLE_DIRECTION.HOR;
 }
 
 /**
@@ -245,16 +235,12 @@ function getRandomDirection(initialCoord) {
  * @param {Event} event
  */
 function onTableClick(event) {
-    const strPosition = event.target.getAttribute('dataPosition');
-    if (strPosition && !isVictory) {
-        const arrayPosition = strPosition.split('-');
-        const playerName = SeaBattleState.getPlayerKeyByMapId(event.currentTarget.getAttribute('id'));
-        if (playerName) {
-            const currentCell = SeaBattleState.getCellByPosition({
-                x: Number(arrayPosition[0]),
-                y: Number(arrayPosition[1])
-            }, playerName);
-            onCellClick(currentCell, event.target, playerName);
+    if (!isVictory) {
+        const elemLocation = getLocationByDOMElem(event.target);
+        const playerName = SeaBattleState.getPlayerKeyByMapId(event.currentTarget.getAttribute(ATTRIBUTE_NAME.ID));
+
+        if (elemLocation && playerName) {
+            onCellClick(SeaBattleState.getCellByPosition(elemLocation, playerName), event.target, playerName);
         }
     }
 }
@@ -267,6 +253,7 @@ function onTableClick(event) {
  * @param {string} playerName - наименование игрока, в которого стрельнули.
  */
 function onCellClick(cell, cellTD, playerName) {
+    /* TODO: часть возможно дублируется. Проверить на дублирование. */
     const isCanHandler = (type) => type !== CELL_TYPE.SHOT && type !== CELL_TYPE.KILL_AREA && type !== CELL_TYPE.SHOT_SHIPS;
     const activePlayer = SeaBattleState.getEnemyList(playerName);
     const isPCPlayer = SeaBattleState.isPCPlayer(activePlayer);
@@ -312,57 +299,39 @@ function onCellClick(cell, cellTD, playerName) {
 }
 
 /**
- * Возвращает DOM-элемент по атрибуту position.
- * @param {object} position
- * @return
- */
-function getCellTDByPosition(position) {
-    const mapTable = document.getElementById(SeaBattleState.getMapId(position.playerName));
-    const shipList = mapTable.getElementsByClassName('sb_playFiled__cell');
-    let result = null;
-
-    for (let i = 0; i < shipList.length; i++) {
-        const arrayPosition = shipList[i].getAttribute('dataPosition').split('-');
-        if (Number(arrayPosition[0]) === position.x && Number(arrayPosition[1]) === position.y) {
-            result = shipList[i];
-            break;
-        }
-    }
-
-    return result;
-}
-
-/**
  * Точка входа для выполнения действия компьютером.
  * @param {string} activePlayer - наименование активного игрока.
  */
 function PCTurn(activePlayer) {
     const enemyName = SeaBattleState.getEnemyList(activePlayer);
-    const PCLevel = SeaBattleState.getPCPlayerLevel();
 
     if (typeof enemyName === 'string') {
-        let shotList = [];
-
-        if (PCLevel === RADIO_INPUT_VALUE.SMALL) {
-            shotList = getShotList(enemyName);
-        } else {
-            if (SeaBattleState.getIsSuccessLastTurn(activePlayer)) {
-                shotList = getFinishOffList(activePlayer, enemyName);
-            } else {
-                if (PCLevel === RADIO_INPUT_VALUE.LARGE) {
-                    shotList = getShotListByShipsSize(enemyName);
-                } else {
-                    shotList = getShotList(enemyName);
-                }
-            }
-        }
-
+        let shotList = getShotListByBCLevel(activePlayer);
         if (shotList.length) {
             const randomIndex = SeaBattle.getRandomNumber(shotList.length - 1);
-            console.log(shotList[randomIndex]);
-            doCellClick(Object.assign(shotList[randomIndex], { playerName: enemyName }));
+            doCellClick({...shotList[randomIndex], playerName: enemyName });
         }
     }
+}
+
+/**
+ * Возвращает список координат для выстрела в соответствии с уровнем PC.
+ * @param {string} activePlayer
+ * @return {array}
+ */
+function getShotListByBCLevel(activePlayer) {
+    const enemyName = SeaBattleState.getEnemyList(activePlayer);
+    const level = SeaBattleState.getPCPlayerLevel();
+    let result;
+
+    if (level === RADIO_INPUT_VALUE.SMALL) {
+        result = getShotList(enemyName);
+    } else {
+        result = SeaBattleState.getIsSuccessLastTurn(activePlayer)
+            ? getFinishOffList(activePlayer, enemyName)
+            : level === RADIO_INPUT_VALUE.LARGE ? getShotListByShipsSize(enemyName) : getShotList(enemyName);
+    }
+    return result;
 }
 
 /**
@@ -371,20 +340,13 @@ function PCTurn(activePlayer) {
  * @param {string} enemyName - наименование врага в которого нужно выстрелить.
  */
 function getShotListByShipsSize(enemyName) {
-    let result = [];
-    let maxSize = 0;
-
+    let size = 0;
     SeaBattleState.getEntireShipItem(enemyName).forEach((item) => {
-        if (item.countUnbroken > maxSize) {
-            maxSize = item.countUnbroken;
+        if (item.countUnbroken > size) {
+            size = item.countUnbroken;
         }
     });
-    if (maxSize > 0) {
-        result = getMapForCurrentShip({ size: maxSize }, enemyName, ACTION_KILL);
-    } else {
-        result = getShotList(enemyName);
-    }
-    return result;
+    return size > 0 ? getMapForCurrentShip({size}, enemyName, ACTION_KILL) : getShotList(enemyName);
 }
 
 /**
@@ -394,89 +356,88 @@ function getShotListByShipsSize(enemyName) {
  */
 function getFinishOffList(activePlayer, enemyName) {
     const successTurn = SeaBattleState.getLastSuccessTurn(activePlayer);
-    const potentialTargetList = [];
     const direction = findDirection(successTurn, enemyName);
-
-    if (direction) {
-        let canBack = true;
-        let canFront = true;
-
-        for (let i = 1; i < 4; i++) {
-            if (canBack) {
-                const currentPosition = direction === AVAILABLE_DIRECTION.HOR ? { x: successTurn.x - i, y: successTurn.y } : { x: successTurn.x, y: successTurn.y - i };
-                const resultCheck = checkPCFinishOffShot(currentPosition, enemyName);
-                canBack = resultCheck.can;
-
-                if (resultCheck.cell) {
-                    potentialTargetList.push(resultCheck.cell);
-                }
-            }
-            if (canFront) {
-                const currentPosition = direction === AVAILABLE_DIRECTION.HOR ? { x: successTurn.x + i, y: successTurn.y } : { x: successTurn.x, y: successTurn.y + i };
-                const resultCheck = checkPCFinishOffShot(currentPosition, enemyName);
-                canFront = resultCheck.can;
-
-                if (resultCheck.cell) {
-                    potentialTargetList.push(resultCheck.cell);
-                }
-            }
-            if (!canFront && canBack) {
-                break;
-            }
-        }
-    } else {
-        const enemyShotCell = getShotList(enemyName);
-        getNeighbouringCell(successTurn).forEach((aroundItem) => {
-            enemyShotCell.forEach((emptyItem) => {
-                if (aroundItem.x === emptyItem.x && aroundItem.y === emptyItem.y) {
-                    potentialTargetList.push(aroundItem);
-                }
-            });
-        });
-    }
-
-    return potentialTargetList;
+    return direction
+        ? getListForShotByDirection(successTurn, direction, enemyName)
+        : getTouchingCellForShot(successTurn, enemyName);
 }
 
 /**
- * Проверяет можем ли стрелять по этой клетке и стоит ли продолжать дальше перебирать знаения.
- * @param {object} position - координаты.
- * @param {object} enemyName - враг.
- * @return {object}
+ * Возвращает массив клеток по которым можно произвести выстрел в соответствии с направлением.
+ * @param {object} successTurn - информации по последнему успешному выстрелу.
+ * @param {string} direction
+ * @param {string} enemyName
+ * @return {array}
  */
-function checkPCFinishOffShot(position, enemyName) {
-    const result = {
-        can: true,
-        cell: null
+function getListForShotByDirection(successTurn, direction, enemyName) {
+    const getCurrentCell = (i, successTurn, direction, enemyName) => {
+        const position = direction === AVAILABLE_DIRECTION.HOR
+            ? {x: successTurn.x + i, y: successTurn.y}
+            : {x: successTurn.x, y: successTurn.y + i};
+        return SeaBattle.checkMapRange(position) ? SeaBattleState.getCellByPosition(position, enemyName) : null;
     };
+    const result = [];
+    let canUseFront = true;
+    let canUseBack = true;
 
-    if (SeaBattle.checkMapRange(position)) {
-        const currentCell = SeaBattleState.getCellByPosition(position, enemyName);
-        if (currentCell.type === CELL_TYPE.SHOT_SHIPS) {
-            result.can = true;
-        } else {
-            if (currentCell.type !== CELL_TYPE.SHOT && currentCell.type !== CELL_TYPE.KILL_AREA) {
-                result.cell = currentCell;
-            }
-        }
-    } else {
-        result.can = false;
+    for (let i = 1; i < 4; i++) {
+        canUseBack = canUseBack ? checkCellForShot(getCurrentCell(-i, successTurn, direction, enemyName), result) : canUseBack;
+        canUseFront = canUseFront ? checkCellForShot(getCurrentCell(i, successTurn, direction, enemyName), result) : canUseFront;
+        if (!canUseBack && !canUseFront) break;
     }
-
     return result;
+}
+
+/**
+ * Проверка клетки на возможность произвести по ней выстрел.
+ * @param {object} cell
+ * @param {array} potentialTargetList
+ * @return {boolean} стоит ли продолжать перебирать клетки по этому направлению.
+ */
+function checkCellForShot(cell, potentialTargetList) {
+    let result = false;
+    if (cell && !USED_CELL.includes(cell.type)) {
+        potentialTargetList.push(cell);
+    } else {
+        result = cell ? CELL_TYPE.SHOT_SHIPS === cell.type : false;
+    }
+    return result;
+}
+
+/**
+ * TODO: остановился тут.
+ * TODO: перенести в базовые методы
+ * Проверяет соответствие координат.
+ * @param {object} first
+ * @param {object} second
+ * @return {boolean}
+ */
+function isEqualCoordinate(first, second) {
+    return first.x === second.x && first.y === second.y;
+}
+
+/**
+ * Возвращает примыкающие клетки по которым можно выстрелить.
+ * @param {object} position - координаты.
+ * @param {string} enemyName
+ * @return {array}
+ */
+function getTouchingCellForShot(position, enemyName) {
+    const cellList = getTouchingCell(position).map(item => SeaBattleState.getCellByPosition(item, enemyName));
+    return cellList.filter(item => !USED_CELL.includes(item.type));
 }
 
 /**
  * Возвращает примыкающие клетки.
  * @param {object} position - координаты.
  */
-function getNeighbouringCell(position) {
+function getTouchingCell(position) {
     const neighbouringList = [];
-    [-1, 1].forEach((item) => {
+    ONES_LIST.forEach(item => {
         neighbouringList.push( { x: position.x + item, y: position.y, direction: AVAILABLE_DIRECTION.HOR } );
         neighbouringList.push( { x: position.x, y: position.y + item, direction: AVAILABLE_DIRECTION.VER } );
     });
-    return neighbouringList;
+    return neighbouringList.filter(item => SeaBattle.checkMapRange(item));
 }
 
 /**
@@ -485,20 +446,15 @@ function getNeighbouringCell(position) {
  * @param {string} playerKey
  */
 function findDirection(position, playerKey) {
-    let result = null;
-    getNeighbouringCell(position).forEach((item) => {
-        if (SeaBattle.checkMapRange(item)) {
-            const cell = SeaBattleState.getCellByPosition(item, playerKey);
-            if (cell && cell.type === CELL_TYPE.SHOT_SHIPS) {
-                result = item.direction;
-            }
-        }
+    const findResult = getTouchingCell(position).find(item => {
+        const cell = SeaBattleState.getCellByPosition(item, playerKey);
+        return cell && cell.type === CELL_TYPE.SHOT_SHIPS
     });
-    return result;
+    return findResult ? findResult.direction : null
 }
 
 /**
- * Точка входа для выполнения действия компьютером. Вероятно, нужно будет переписать.
+ * Точка входа для выполнения действия компьютером.
  * @param {object} position - координаты выстрела.
  */
 function doCellClick(position) {
@@ -513,7 +469,10 @@ function doCellClick(position) {
 function getShotList(enemyPlayer) {
     const shotList = [];
     SeaBattleState.getMap(enemyPlayer).forEach((item) => {
-        if (item.type !== CELL_TYPE.KILL_AREA && item.type !== CELL_TYPE.SHOT_SHIPS && item.type !== CELL_TYPE.SHOT) {
+        // TODO: чуть позже посмотреть не дублируется ли данное условие.
+        const notEmptyCellList = [CELL_TYPE.KILL_AREA, CELL_TYPE.SHOT_SHIPS, CELL_TYPE.SHOT];
+        // const condition = item.type !== CELL_TYPE.KILL_AREA && item.type !== CELL_TYPE.SHOT_SHIPS && item.type !== CELL_TYPE.SHOT;
+        if (!notEmptyCellList.includes(item.type)) {
             shotList.push(item);
         }
     });
@@ -521,18 +480,28 @@ function getShotList(enemyPlayer) {
 }
 
 /**
+ * TODO: опитимизация - вызывать только при убийстве корабля.
  * Проверяем остались ли ещё непотопленные корабли.
  * @param {string} enemyPlayer
  * @return {boolean}
  */
 function checkVictory(enemyPlayer) {
-    let noEmptyList = [];
-    SeaBattleState[enemyPlayer].countShipList.forEach((item) => {
+    return !notEmptyCountShipList(enemyPlayer);
+}
+
+/**
+ * Метод проверяет убиты ли все корабли.
+ * @param {string} enemyPlayer
+ * @return {boolean}
+ */
+function notEmptyCountShipList(enemyPlayer) {
+    return SeaBattleState[enemyPlayer].countShipList.find(item => {
+        let result = false;
         if (item.countUnbroken !== 0) {
-            noEmptyList.push(item);
+            result = true;
         }
+        return result;
     });
-    return !noEmptyList.length;
 }
 
 /**
@@ -561,5 +530,7 @@ function setRadioButtonHandler() {
     }
 }
 
-startSeaBattle();
+cellHelpers.isEmptyCell = type => type === CELL_TYPE.EMPTY;
+cellHelpers.isUsedCell = type => USED_CELL.includes(type);
 
+startSeaBattle();
