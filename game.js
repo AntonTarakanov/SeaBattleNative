@@ -1,5 +1,4 @@
 const SeaBattleState = new SeaBattle();
-const cellHelpers = {};
 let isVictory = false;
 
 /**
@@ -74,8 +73,8 @@ function setShipSomewhere(shipInfo, playerName, shipIndex) {
 function getMapForCurrentShip(shipInfo, playerKey, action) {
     const resultArray = [];
     const checkCallback = action === ACTION_KILL
-        ? type => cellHelpers.isUsedCell(type)
-        : type => !cellHelpers.isEmptyCell(type);
+        ? type => cellHelpers.isUsed(type)
+        : type => !cellHelpers.isEmpty(type);
 
     SeaBattleState.getMap(playerKey).forEach(item => {
         if (!checkCallback(item.type)) {
@@ -253,13 +252,11 @@ function onTableClick(event) {
  * @param {string} playerName - наименование игрока, в которого стрельнули.
  */
 function onCellClick(cell, cellTD, playerName) {
-    /* TODO: часть возможно дублируется. Проверить на дублирование. */
-    const isCanHandler = (type) => type !== CELL_TYPE.SHOT && type !== CELL_TYPE.KILL_AREA && type !== CELL_TYPE.SHOT_SHIPS;
     const activePlayer = SeaBattleState.getEnemyList(playerName);
     const isPCPlayer = SeaBattleState.isPCPlayer(activePlayer);
 
-    if (isCanHandler(cell.type)) {
-        if (cell.type === CELL_TYPE.SHIP) {
+    if (!cellHelpers.isUsed(cell.type)) {
+        if (cellHelpers.isShip(cell.type)) {
             const countShipItem = SeaBattleState.getCountShipItem(playerName, cell.attribute.shipId);
             countShipItem.countUnbroken = countShipItem.countUnbroken - 1;
             const shipFinishOff = countShipItem.countUnbroken === 0;
@@ -396,24 +393,12 @@ function getListForShotByDirection(successTurn, direction, enemyName) {
  */
 function checkCellForShot(cell, potentialTargetList) {
     let result = false;
-    if (cell && !USED_CELL.includes(cell.type)) {
+    if (cell && !cellHelpers.isUsed(cell.type)) {
         potentialTargetList.push(cell);
     } else {
         result = cell ? CELL_TYPE.SHOT_SHIPS === cell.type : false;
     }
     return result;
-}
-
-/**
- * TODO: остановился тут.
- * TODO: перенести в базовые методы
- * Проверяет соответствие координат.
- * @param {object} first
- * @param {object} second
- * @return {boolean}
- */
-function isEqualCoordinate(first, second) {
-    return first.x === second.x && first.y === second.y;
 }
 
 /**
@@ -424,7 +409,7 @@ function isEqualCoordinate(first, second) {
  */
 function getTouchingCellForShot(position, enemyName) {
     const cellList = getTouchingCell(position).map(item => SeaBattleState.getCellByPosition(item, enemyName));
-    return cellList.filter(item => !USED_CELL.includes(item.type));
+    return cellList.filter(item => !cellHelpers.isUsed(item));
 }
 
 /**
@@ -469,10 +454,7 @@ function doCellClick(position) {
 function getShotList(enemyPlayer) {
     const shotList = [];
     SeaBattleState.getMap(enemyPlayer).forEach((item) => {
-        // TODO: чуть позже посмотреть не дублируется ли данное условие.
-        const notEmptyCellList = [CELL_TYPE.KILL_AREA, CELL_TYPE.SHOT_SHIPS, CELL_TYPE.SHOT];
-        // const condition = item.type !== CELL_TYPE.KILL_AREA && item.type !== CELL_TYPE.SHOT_SHIPS && item.type !== CELL_TYPE.SHOT;
-        if (!notEmptyCellList.includes(item.type)) {
+        if (!cellHelpers.isUsed(item.type)) {
             shotList.push(item);
         }
     });
@@ -495,13 +477,7 @@ function checkVictory(enemyPlayer) {
  * @return {boolean}
  */
 function notEmptyCountShipList(enemyPlayer) {
-    return SeaBattleState[enemyPlayer].countShipList.find(item => {
-        let result = false;
-        if (item.countUnbroken !== 0) {
-            result = true;
-        }
-        return result;
-    });
+    return SeaBattleState[enemyPlayer].countShipList.find(item => item.countUnbroken !== 0);
 }
 
 /**
@@ -529,8 +505,5 @@ function setRadioButtonHandler() {
         SeaBattleState.setPCPlayerLevel(defaultLevel);
     }
 }
-
-cellHelpers.isEmptyCell = type => type === CELL_TYPE.EMPTY;
-cellHelpers.isUsedCell = type => USED_CELL.includes(type);
 
 startSeaBattle();
